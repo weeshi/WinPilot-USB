@@ -85,7 +85,7 @@ internal sealed class MainForm : Form
 
         var appHeader = new Label { Text = "البرامج المتاحة  |  Available applications", AutoSize = true, Location = new Point(660, 154), ForeColor = Color.FromArgb(61, 220, 235), Font = new Font("Segoe UI Semibold", 12F) };
         var search = new TextBox { Text = "بحث في البرامج المتاحة...", Location = new Point(1010, 150), Size = new Size(242, 25), BackColor = Color.FromArgb(8, 14, 30), ForeColor = Color.FromArgb(150, 170, 195), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "applicationSearch" };
-        var side = new Label { Text = "أدوات إضافية  |  Additional tools", AutoSize = true, Location = new Point(38, 270), ForeColor = Color.FromArgb(61, 220, 235), Font = new Font("Segoe UI Semibold", 12F) };
+        var side = new Label { Text = "أدوات إضافية  |  Additional tools", AutoSize = true, Location = new Point(38, 182), ForeColor = Color.FromArgb(61, 220, 235), Font = new Font("Segoe UI Semibold", 12F) };
         Controls.AddRange(new Control[] { selectAll, countLabel, appList, appHeader, search, side });
         BuildToolCards();
 
@@ -103,25 +103,30 @@ internal sealed class MainForm : Form
 
     private void BuildToolCards()
     {
-        AddImageCard(38, 300, "Office", "Microsoft Office  •  ISO", Path.Combine(root, "assets", "office-card.png"), (s, e) => OpenOfficeInstaller());
-        AddImageCard(350, 300, "Drivers", "تعريفات الأجهزة  •  SDI", Path.Combine(root, "assets", "drivers-card.png"), (s, e) => OpenDriverInstaller());
-        AddImageCard(38, 435, "Windows Updates Stop", "إيقاف تحديثات Windows", Path.Combine(root, "assets", "windows-updates-stop-card.png"), (s, e) => DisableUpdates());
-        AddImageCard(350, 435, "Windows Updates Start", "تشغيل تحديثات Windows", Path.Combine(root, "assets", "windows-updates-start-card.png"), (s, e) => EnableUpdates());
-        AddImageCard(38, 570, "Windows + Office Activation", "تفعيل Windows وOffice", Path.Combine(root, "assets", "windows-office-activation-card.png"), (s, e) => ActivateWindowsOffice());
-        var contact = new Panel { Location = new Point(350, 215), Size = new Size(285, 78), BackColor = Color.FromArgb(16, 29, 50), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "contactInformation" };
-        var contactTitle = new Label { Text = "بيانات التواصل  |  Contact", AutoSize = true, Location = new Point(10, 6), ForeColor = Color.FromArgb(61, 220, 235), Font = new Font("Segoe UI Semibold", 10F) };
-        var contactText = new Label { Text = "0915955991   •   0945955991", AutoSize = false, Size = new Size(270, 20), Location = new Point(10, 28), ForeColor = Color.FromArgb(210, 220, 225), Font = new Font("Segoe UI", 8.5F) };
-        var facebook = MakeContactButton("f", 10, "#", "Facebook");
-        var whatsapp = MakeContactButton("WA", 75, "https://wa.me/218915955991", "WhatsApp");
-        var website = MakeContactButton("WEB", 140, "https://www.ly-tech.ly", "Website");
-        var email = MakeContactButton("✉", 205, "mailto:weeshiaia@gmail.com", "Email");
-        contact.Controls.AddRange(new Control[] { contactTitle, contactText, facebook, whatsapp, website, email }); Controls.Add(contact);
+        var grid = new Panel { Location = new Point(38, 215), Size = new Size(598, 435), BackColor = Color.FromArgb(18, 30, 50), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "toolsGrid" };
+        Controls.Add(grid);
+        toolsGrid = grid;
+        AddImageCard(10, 10, "Office", "Microsoft Office  •  ISO", Path.Combine(root, "assets", "office-card.png"), (s, e) => OpenOfficeInstaller());
+        AddImageCard(303, 10, "Drivers", "تعريفات الأجهزة  •  SDI", Path.Combine(root, "assets", "drivers-card.png"), (s, e) => OpenDriverInstaller());
+        AddImageCard(10, 145, "Windows Updates Stop", "إيقاف تحديثات Windows", Path.Combine(root, "assets", "windows-updates-stop-card.png"), (s, e) => DisableUpdates());
+        AddImageCard(303, 145, "Windows Updates Start", "تشغيل تحديثات Windows", Path.Combine(root, "assets", "windows-updates-start-card.png"), (s, e) => EnableUpdates());
+        AddImageCard(10, 280, "Windows + Office Activation", "تفعيل Windows وOffice", Path.Combine(root, "assets", "windows-office-activation-card.png"), (s, e) => ActivateWindowsOffice());
+        var contact = new Panel { Location = new Point(303, 280), Size = new Size(285, 125), BackColor = Color.FromArgb(16, 29, 50), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "contactInformation" };
+        var contactTitle = new Label { Text = "بيانات التواصل  |  Contact", AutoSize = true, Location = new Point(10, 10), ForeColor = Color.FromArgb(61, 220, 235), Font = new Font("Segoe UI Semibold", 10F) };
+        var contactText = new Label { Text = "0915955991   •   0945955991", AutoSize = false, Size = new Size(270, 20), Location = new Point(10, 35), ForeColor = Color.FromArgb(210, 220, 225), Font = new Font("Segoe UI", 8.5F) };
+        var facebook = MakeContactButton(Path.Combine(root, "assets", "contact-facebook.png"), "#", "Facebook", 10);
+        var whatsapp = MakeContactButton(Path.Combine(root, "assets", "contact-whatsapp.png"), "https://wa.me/218915955991", "WhatsApp", 75);
+        var website = MakeContactButton(Path.Combine(root, "assets", "contact-website.png"), "https://www.ly-tech.ly", "Website", 140);
+        var email = MakeContactButton(Path.Combine(root, "assets", "contact-email.png"), "mailto:weeshiaia@gmail.com", "Email", 205);
+        contact.Controls.AddRange(new Control[] { contactTitle, contactText, facebook, whatsapp, website, email }); toolsGrid.Controls.Add(contact);
     }
 
-    private Button MakeContactButton(string text, int x, string target, string name)
+    private Panel toolsGrid;
+
+    private Button MakeContactButton(string imagePath, string target, string name, int x)
     {
-        var button = new Button { Text = text, Location = new Point(x, 52), Size = new Size(55, 20), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(20, 49, 68), ForeColor = Color.FromArgb(102, 231, 232), Font = new Font("Segoe UI Semibold", 8F), AccessibleName = name, Cursor = Cursors.Hand };
-        button.FlatAppearance.BorderColor = Color.FromArgb(52, 133, 151);
+        var button = new Button { Location = new Point(x, 63), Size = new Size(48, 48), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(16, 29, 50), ForeColor = Color.White, Image = LoadImageUnlocked(imagePath), ImageAlign = ContentAlignment.MiddleCenter, AccessibleName = name, Cursor = Cursors.Hand, TabStop = true };
+        button.FlatAppearance.BorderSize = 0;
         button.Click += (s, e) => OpenContactTarget(target, name);
         return button;
     }
@@ -138,7 +143,7 @@ internal sealed class MainForm : Form
         var image = new PictureBox { Location = new Point(6, 6), Size = new Size(273, 76), SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.FromArgb(9, 14, 18), Image = LoadImageUnlocked(imagePath), Cursor = Cursors.Hand };
         var label = new Label { Text = title, AutoSize = true, Location = new Point(9, 87), ForeColor = Color.White, Font = new Font("Segoe UI Semibold", 10.5F), Cursor = Cursors.Hand };
         var sub = new Label { Text = subtitle, AutoSize = false, Size = new Size(270, 25), Location = new Point(9, 105), ForeColor = Color.FromArgb(180, 190, 198), Cursor = Cursors.Hand };
-        card.Click += click; image.Click += click; label.Click += click; sub.Click += click; card.Controls.AddRange(new Control[] { image, label, sub }); Controls.Add(card);
+        card.Click += click; image.Click += click; label.Click += click; sub.Click += click; card.Controls.AddRange(new Control[] { image, label, sub }); if (toolsGrid != null) toolsGrid.Controls.Add(card); else Controls.Add(card);
     }
 
     private void DrawApplicationItem(object sender, DrawItemEventArgs e)
