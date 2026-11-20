@@ -47,4 +47,9 @@
 - .NET Desktop Runtime 9 x64/x86 — مثبتان صامتان وSHA-256 متحقق.
 - CrystalDiskInfo 9.9.5 — تثبيت Inno Setup صامت وSHA-256 متحقق.
 - Google Drive for desktop — أضيف إلى manifest، ونجح `DryRun` مع SHA-256 للملف المحلي.
-- Google app for desktop — أضيف كعنصر يدوي مؤقت حتى يتوفر مثبت قابل للتوزيع ورابط ثابت.
+- Google app for desktop — لم يعد ضمن قائمة التثبيت لعدم توفر مثبت محلي ثابت.
+
+## العناصر المستبعدة
+
+- Kaspersky Antivirus Offline: أزيل من التطبيق لأنه لا يملك أمر تثبيت صامت موثقًا في الحزمة.
+- Google app for desktop: أزيل من التطبيق لعدم توفر ملف مثبت محلي ثابت يمكن التحقق من SHA-256 له.

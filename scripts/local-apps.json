@@ -136,20 +136,12 @@
     "SHA256": "77C161702500CDE913C5B5281E9C8E790C27C80D87423B20807DB9E14DC4B67A"
   },
   {
-    "Id": "kaspersky",
-    "Name": "Kaspersky Antivirus Offline",
-    "Pattern": "kav*.exe",
-    "Type": "manual",
-    "SilentArgs": "",
-    "SHA256": "9DA279A9B4141A25B6E0DD20869721A8B4EF756D33688285C8A295BBB1F1A3E8"
-  },
-  {
     "Id": "vcredist-x64",
     "Name": "Microsoft Visual C++ Redistributable x64",
     "Pattern": "Microsoft Visual C++ v14 Redistributable (x64)*.exe",
     "Type": "exe",
     "SilentArgs": "/install /quiet /norestart",
-        "SHA256": "9C02C9ED120F671B900E6B9471D890E3B2414117A7E53F4AE2E855466FA2B7C9"
+    "SHA256": "9C02C9ED120F671B900E6B9471D890E3B2414117A7E53F4AE2E855466FA2B7C9"
   },
   {
     "Id": "vcredist-x86",
@@ -190,13 +182,5 @@
     "Type": "exe",
     "SilentArgs": "--silent",
     "SHA256": "2CB39F4B8E640944C83E7EEE34F0F886B58DF23FA4141C225714CD6646B96575"
-  },
-  {
-    "Id": "google-search-desktop",
-    "Name": "Google app for desktop",
-    "Pattern": "GoogleAppInstaller.exe",
-    "Type": "manual",
-    "SilentArgs": "",
-    "SHA256": ""
   }
 ]
