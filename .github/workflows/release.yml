@@ -1,0 +1,69 @@
+name: Build, hash, release and sign
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Build
+        shell: pwsh
+        run: dotnet build .\WinPilot-USB.csproj -c Release --nologo
+      - name: Prepare release files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release | Out-Null
+          Copy-Item .\bin\Release\net48\WinPilot-USB.exe .\release\WinPilot-USB.exe
+          Get-FileHash .\release\WinPilot-USB.exe -Algorithm SHA256 | Format-List | Out-File .\release\SHA256SUMS.txt -Encoding utf8
+      - name: Upload unsigned artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: winpilot-release
+          path: release
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/WinPilot-USB.exe
+            release/SHA256SUMS.txt
+
+  signpath:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/') && vars.SIGNPATH_ENABLED == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: winpilot-release
+          path: release
+      - name: Submit to SignPath
+        uses: SignPath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}
+          input-artifact-path: release/WinPilot-USB.exe
+          output-artifact-path: release/WinPilot-USB-signed.exe
+          wait-for-completion: true
+      - name: Recalculate signed hash
+        shell: pwsh
+        run: Get-FileHash .\release\WinPilot-USB-signed.exe -Algorithm SHA256 | Format-List | Out-File .\release\SHA256SUMS-signed.txt -Encoding utf8
+      - name: Upload signed release files
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/WinPilot-USB-signed.exe
+            release/SHA256SUMS-signed.txt

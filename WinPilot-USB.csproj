@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <PlatformTarget>x86</PlatformTarget>
+    <Prefer32Bit>true</Prefer32Bit>
+    <AssemblyName>WinPilot-USB</AssemblyName>
+    <RootNamespace>WinPilotUSB</RootNamespace>
+    <ApplicationIcon>logo.ico</ApplicationIcon>
+    <ApplicationManifest>.work\app.manifest</ApplicationManifest>
+    <LangVersion>latest</LangVersion>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Version>1.0.0.0</Version>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0</InformationalVersion>
+    <Company>WeeshiTech Solutions</Company>
+    <Product>Weeshi USB Installer</Product>
+    <Description>Offline USB installer and maintenance utility</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include=".work\Launcher.cs" />
+    <Reference Include="System" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+</Project>

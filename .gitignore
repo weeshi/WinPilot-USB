@@ -1,0 +1,9 @@
+Apps/*
+!Apps/.gitkeep
+bin/
+obj/
+*.exe
+scripts/logs/
+scripts/windows-update-state.json
+scripts/windows-update-registry-backup.json
+.vs/
