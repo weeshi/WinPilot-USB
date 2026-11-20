@@ -108,10 +108,28 @@ internal sealed class MainForm : Form
         AddImageCard(38, 435, "Windows Updates Stop", "إيقاف تحديثات Windows", Path.Combine(root, "assets", "windows-updates-stop-card.png"), (s, e) => DisableUpdates());
         AddImageCard(350, 435, "Windows Updates Start", "تشغيل تحديثات Windows", Path.Combine(root, "assets", "windows-updates-start-card.png"), (s, e) => EnableUpdates());
         AddImageCard(38, 570, "Windows + Office Activation", "تفعيل Windows وOffice", Path.Combine(root, "assets", "windows-office-activation-card.png"), (s, e) => ActivateWindowsOffice());
-        var contact = new Panel { Location = new Point(350, 215), Size = new Size(285, 65), BackColor = Color.FromArgb(16, 29, 50), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "contactInformation" };
+        var contact = new Panel { Location = new Point(350, 215), Size = new Size(285, 78), BackColor = Color.FromArgb(16, 29, 50), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "contactInformation" };
         var contactTitle = new Label { Text = "بيانات التواصل  |  Contact", AutoSize = true, Location = new Point(10, 6), ForeColor = Color.FromArgb(61, 220, 235), Font = new Font("Segoe UI Semibold", 10F) };
-        var contactText = new Label { Text = ReadContactInfo().Replace("\r\n", "   •   "), AutoSize = false, Size = new Size(270, 30), Location = new Point(10, 30), ForeColor = Color.FromArgb(210, 220, 225), Font = new Font("Segoe UI", 8.5F) };
-        contact.Controls.AddRange(new Control[] { contactTitle, contactText }); Controls.Add(contact);
+        var contactText = new Label { Text = "0915955991   •   0945955991", AutoSize = false, Size = new Size(270, 20), Location = new Point(10, 28), ForeColor = Color.FromArgb(210, 220, 225), Font = new Font("Segoe UI", 8.5F) };
+        var facebook = MakeContactButton("f", 10, "#", "Facebook");
+        var whatsapp = MakeContactButton("WA", 75, "https://wa.me/218915955991", "WhatsApp");
+        var website = MakeContactButton("WEB", 140, "https://www.ly-tech.ly", "Website");
+        var email = MakeContactButton("✉", 205, "mailto:weeshiaia@gmail.com", "Email");
+        contact.Controls.AddRange(new Control[] { contactTitle, contactText, facebook, whatsapp, website, email }); Controls.Add(contact);
+    }
+
+    private Button MakeContactButton(string text, int x, string target, string name)
+    {
+        var button = new Button { Text = text, Location = new Point(x, 52), Size = new Size(55, 20), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(20, 49, 68), ForeColor = Color.FromArgb(102, 231, 232), Font = new Font("Segoe UI Semibold", 8F), AccessibleName = name, Cursor = Cursors.Hand };
+        button.FlatAppearance.BorderColor = Color.FromArgb(52, 133, 151);
+        button.Click += (s, e) => OpenContactTarget(target, name);
+        return button;
+    }
+
+    private void OpenContactTarget(string target, string name)
+    {
+        if (target == "#") { MessageBox.Show("لم يتم تحديد رابط Facebook بعد.", name, MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+        try { Process.Start(new ProcessStartInfo { FileName = target, UseShellExecute = true }); } catch (Exception ex) { MessageBox.Show(ex.Message, name, MessageBoxButtons.OK, MessageBoxIcon.Error); }
     }
 
     private void AddImageCard(int x, int y, string title, string subtitle, string imagePath, EventHandler click)
@@ -188,12 +206,12 @@ internal sealed class MainForm : Form
     private void DisableUpdates()
     {
         var script = Path.Combine(root, "scripts", "Disable-Windows-Updates.ps1"); if (!File.Exists(script)) { MessageBox.Show("ضع سكربت Disable-Windows-Updates.ps1 داخل scripts ثم أعد المحاولة.", "Windows Updates", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
-        try { Process.Start(new ProcessStartInfo { FileName = "powershell.exe", Arguments = "-NoProfile -ExecutionPolicy Bypass -File \"" + script + "\"", Verb = "runas", UseShellExecute = true }); } catch (Exception ex) { MessageBox.Show(ex.Message, "Windows Updates", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        try { Process.Start(new ProcessStartInfo { FileName = "powershell.exe", Arguments = "-NoProfile -ExecutionPolicy Bypass -File \"" + script + "\" -Force", Verb = "runas", UseShellExecute = true, WindowStyle = ProcessWindowStyle.Normal }); } catch (Exception ex) { MessageBox.Show(ex.Message, "Windows Updates", MessageBoxButtons.OK, MessageBoxIcon.Error); }
     }
     private void EnableUpdates()
     {
         var script = Path.Combine(root, "scripts", "Disable-Windows-Updates.ps1"); if (!File.Exists(script)) { MessageBox.Show("ضع سكربت Disable-Windows-Updates.ps1 داخل scripts ثم أعد المحاولة.", "Windows Updates", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
-        try { Process.Start(new ProcessStartInfo { FileName = "powershell.exe", Arguments = "-NoProfile -ExecutionPolicy Bypass -File \"" + script + "\" -Restore", Verb = "runas", UseShellExecute = true }); } catch (Exception ex) { MessageBox.Show(ex.Message, "Windows Updates", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        try { Process.Start(new ProcessStartInfo { FileName = "powershell.exe", Arguments = "-NoProfile -ExecutionPolicy Bypass -File \"" + script + "\" -Restore", Verb = "runas", UseShellExecute = true, WindowStyle = ProcessWindowStyle.Normal }); } catch (Exception ex) { MessageBox.Show(ex.Message, "Windows Updates", MessageBoxButtons.OK, MessageBoxIcon.Error); }
     }
     private void ActivateWindowsOffice()
     {

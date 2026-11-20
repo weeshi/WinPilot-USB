@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([switch]$Restore)
+param([switch]$Restore, [switch]$Force)
 
 # This script changes Windows Update services and policy. Run as Administrator.
 $ErrorActionPreference = 'Stop'
@@ -16,7 +16,7 @@ function Assert-Admin {
 
 Assert-Admin
 
-if (-not $Restore) {
+if (-not $Restore -and -not $Force) {
     Write-Warning 'This disables Windows Update and may block security updates.'
     if ((Read-Host 'Type DISABLE to continue') -cne 'DISABLE') { throw 'Operation cancelled.' }
 }
