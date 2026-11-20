@@ -11,6 +11,8 @@
 - سجلات تثبيت في `scripts/logs`.
 - بطاقة Office لفتح ISO، وبطاقة Drivers لتشغيل مثبت SDI.
 - إدارة Windows Update مع حفظ الحالة والاستعادة.
+- بطاقة مستقلة لتفعيل Windows وOffice تشغّل `MAS_AIO.cmd` كمسؤول.
+- بطاقتان منفصلتان لإيقاف وتشغيل Windows Update.
 - واجهة Windows Forms عربية/إنجليزية وإعلانات محلية.
 
 ## الإصلاحات المنفذة

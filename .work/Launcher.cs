@@ -46,8 +46,8 @@ internal sealed class MainForm : Form
     {
         Text = "Weeshi USB Installer";
         StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new Size(1100, 650);
-        Size = new Size(1290, 690);
+        MinimumSize = new Size(1100, 800);
+        Size = new Size(1290, 840);
         BackColor = Color.FromArgb(10, 17, 32);
         ForeColor = Color.White;
         Font = new Font("Segoe UI", 10F);
@@ -91,10 +91,10 @@ internal sealed class MainForm : Form
 
         Controls.AddRange(new Control[] { clearTop, install });
 
-        progress = new ProgressBar { Location = new Point(38, 580), Size = new Size(1214, 14), Minimum = 0, Maximum = 100, Style = ProgressBarStyle.Continuous, AccessibleName = "installProgress" };
-        output = new RichTextBox { Location = new Point(38, 602), Size = new Size(1214, 35), ReadOnly = true, BackColor = Color.FromArgb(6, 11, 22), ForeColor = Color.FromArgb(198, 231, 230), Font = new Font("Consolas", 9F), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "installLog", Text = "[READY]  حدد البرامج التي تريد تثبيتها ثم اضغط تثبيت صامت.\r\n" };
-        var versionLabel = new Label { Text = "Version 1.0   →   WeeshiTech Solutions © 2025", AutoSize = true, Location = new Point(38, 647), ForeColor = Color.FromArgb(125, 145, 170), Font = new Font("Consolas", 8.5F), AccessibleName = "applicationVersion" };
-        var footerStatus = new Label { Text = "جاهز للاستخدام  •  READY", AutoSize = true, Location = new Point(1090, 647), ForeColor = Color.FromArgb(91, 215, 164), Font = new Font("Segoe UI", 8.5F) };
+        progress = new ProgressBar { Location = new Point(38, 715), Size = new Size(1214, 14), Minimum = 0, Maximum = 100, Style = ProgressBarStyle.Continuous, AccessibleName = "installProgress" };
+        output = new RichTextBox { Location = new Point(38, 737), Size = new Size(1214, 35), ReadOnly = true, BackColor = Color.FromArgb(6, 11, 22), ForeColor = Color.FromArgb(198, 231, 230), Font = new Font("Consolas", 9F), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "installLog", Text = "[READY]  حدد البرامج التي تريد تثبيتها ثم اضغط تثبيت صامت.\r\n" };
+        var versionLabel = new Label { Text = "Version 1.0   →   WeeshiTech Solutions © 2025", AutoSize = true, Location = new Point(38, 782), ForeColor = Color.FromArgb(125, 145, 170), Font = new Font("Consolas", 8.5F), AccessibleName = "applicationVersion" };
+        var footerStatus = new Label { Text = "جاهز للاستخدام  •  READY", AutoSize = true, Location = new Point(1090, 782), ForeColor = Color.FromArgb(91, 215, 164), Font = new Font("Segoe UI", 8.5F) };
         Controls.AddRange(new Control[] { progress, output, versionLabel, footerStatus });
         progressTimer = new Timer { Interval = 350 };
         progressTimer.Tick += (s, e) => UpdateProgressEstimate();
@@ -105,7 +105,9 @@ internal sealed class MainForm : Form
     {
         AddImageCard(38, 300, "Office", "Microsoft Office  •  ISO", Path.Combine(root, "assets", "office-card.png"), (s, e) => OpenOfficeInstaller());
         AddImageCard(350, 300, "Drivers", "تعريفات الأجهزة  •  SDI", Path.Combine(root, "assets", "drivers-card.png"), (s, e) => OpenDriverInstaller());
-        AddImageCard(38, 435, "Windows Updates", "إيقاف أو تفعيل التحديثات", Path.Combine(root, "assets", "updates-card.png"), (s, e) => DisableUpdates());
+        AddImageCard(38, 435, "Windows Updates Stop", "إيقاف تحديثات Windows", Path.Combine(root, "assets", "windows-updates-stop-card.png"), (s, e) => DisableUpdates());
+        AddImageCard(350, 435, "Windows Updates Start", "تشغيل تحديثات Windows", Path.Combine(root, "assets", "windows-updates-start-card.png"), (s, e) => EnableUpdates());
+        AddImageCard(38, 570, "Windows + Office Activation", "تفعيل Windows وOffice", Path.Combine(root, "assets", "windows-office-activation-card.png"), (s, e) => ActivateWindowsOffice());
         var contact = new Panel { Location = new Point(350, 215), Size = new Size(285, 65), BackColor = Color.FromArgb(16, 29, 50), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "contactInformation" };
         var contactTitle = new Label { Text = "بيانات التواصل  |  Contact", AutoSize = true, Location = new Point(10, 6), ForeColor = Color.FromArgb(61, 220, 235), Font = new Font("Segoe UI Semibold", 10F) };
         var contactText = new Label { Text = ReadContactInfo().Replace("\r\n", "   •   "), AutoSize = false, Size = new Size(270, 30), Location = new Point(10, 30), ForeColor = Color.FromArgb(210, 220, 225), Font = new Font("Segoe UI", 8.5F) };
@@ -187,6 +189,16 @@ internal sealed class MainForm : Form
     {
         var script = Path.Combine(root, "scripts", "Disable-Windows-Updates.ps1"); if (!File.Exists(script)) { MessageBox.Show("ضع سكربت Disable-Windows-Updates.ps1 داخل scripts ثم أعد المحاولة.", "Windows Updates", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
         try { Process.Start(new ProcessStartInfo { FileName = "powershell.exe", Arguments = "-NoProfile -ExecutionPolicy Bypass -File \"" + script + "\"", Verb = "runas", UseShellExecute = true }); } catch (Exception ex) { MessageBox.Show(ex.Message, "Windows Updates", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+    }
+    private void EnableUpdates()
+    {
+        var script = Path.Combine(root, "scripts", "Disable-Windows-Updates.ps1"); if (!File.Exists(script)) { MessageBox.Show("ضع سكربت Disable-Windows-Updates.ps1 داخل scripts ثم أعد المحاولة.", "Windows Updates", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+        try { Process.Start(new ProcessStartInfo { FileName = "powershell.exe", Arguments = "-NoProfile -ExecutionPolicy Bypass -File \"" + script + "\" -Restore", Verb = "runas", UseShellExecute = true }); } catch (Exception ex) { MessageBox.Show(ex.Message, "Windows Updates", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+    }
+    private void ActivateWindowsOffice()
+    {
+        var script = Path.Combine(root, "scripts", "MAS_AIO.cmd"); if (!File.Exists(script)) { MessageBox.Show("ضع سكربت MAS_AIO.cmd داخل scripts ثم أعد المحاولة.", "Activation", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+        try { Process.Start(new ProcessStartInfo { FileName = "cmd.exe", Arguments = "/c \"\"" + script + "\"\"", WorkingDirectory = root, Verb = "runas", UseShellExecute = true }); } catch (Exception ex) { MessageBox.Show(ex.Message, "Activation", MessageBoxButtons.OK, MessageBoxIcon.Error); }
     }
     private void StartNormalInstaller(string file)
     {
