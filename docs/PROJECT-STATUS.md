@@ -40,3 +40,11 @@
 - قبول SignPath Foundation قرار خارجي يتطلب تقديم المشروع ومراجعته.
 - اختبار التثبيت الفعلي لكل برنامج يحتاج أجهزة/آلات افتراضية Windows 10 وWindows 11.
 - مجلد `Apps` غير منشور في GitHub؛ يجب توزيعه محليًا مع مراعاة تراخيص كل برنامج.
+
+## آخر البرامج المضافة
+
+- Microsoft Visual C++ Redistributable x64/x86 — مثبتان صامتان وSHA-256 متحقق.
+- .NET Desktop Runtime 9 x64/x86 — مثبتان صامتان وSHA-256 متحقق.
+- CrystalDiskInfo 9.9.5 — تثبيت Inno Setup صامت وSHA-256 متحقق.
+- Google Drive for desktop — أضيف إلى manifest، ونجح `DryRun` مع SHA-256 للملف المحلي.
+- Google app for desktop — أضيف كعنصر يدوي مؤقت حتى يتوفر مثبت قابل للتوزيع ورابط ثابت.

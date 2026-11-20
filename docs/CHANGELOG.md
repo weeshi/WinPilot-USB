@@ -29,6 +29,15 @@
 - توثيق أن التطبيق x86 ويستهدف Windows 10 وWindows 11 عبر WoW64.
 - توثيق أن التوقيع العام لم يتم اعتماده بعد، وأن الشهادة الذاتية لا تعادل شهادة موثوقة.
 
+### حزمة البرامج الإضافية
+
+- إضافة Microsoft Visual C++ Redistributable 2015+ لكل من x64 وx86.
+- إضافة .NET Desktop Runtime 9 لكل من x64 وx86.
+- إضافة CrystalDiskInfo 9.9.5 للفحص الصحي للأقراص.
+- إضافة Google Drive for desktop إلى manifest ومعامل `--silent` الخاص بالمثبت المتاح محليًا.
+- إضافة عنصر Google app for desktop باسم Google Search Desktop كعنصر يدوي مؤقت؛ لم يتم تضمين مثبت لأن Google لا يوفر رابطًا ثابتًا موثقًا للملف التنفيذي.
+- التحقق من SHA-256 للبرامج الجديدة القابلة للتثبيت واختبارها عبر `DryRun`.
+
 ## 1.0 — 2026-11-08
 
 - اعتماد اسم Weeshi USB Installer.

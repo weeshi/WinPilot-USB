@@ -1,146 +1,202 @@
-﻿[
-    {
-        "Id":  "360",
-        "Name":  "360 Total Security",
-        "Pattern":  "360TS_Setup_*.exe",
-        "Type":  "exe",
-        "SilentArgs":  "/S",
-        "SHA256":  "81F8C22E3151EDEAA892B4E01E8E2C878FD02FBA6F24709786A8521D3091AD0F"
-    },
-    {
-        "Id":  "anydesk",
-        "Name":  "AnyDesk",
-        "Pattern":  "AnyDesk.exe",
-        "Type":  "exe",
-        "SilentArgs":  "--install \"C:\\Program Files (x86)\\AnyDesk\" --silent",
-        "SHA256":  "C3BFCD713B4758D4D83FDF5929A6666554338386A59BC97932DEF37EF3B96613"
-    },
-    {
-        "Id":  "brave",
-        "Name":  "Brave Browser",
-        "Pattern":  "Brave Browser_*.exe",
-        "Type":  "exe",
-        "SilentArgs":  "--install --silent",
-        "SHA256":  "4E1D4CD8CCD99E1D1077F607A4C38E06D6017E87F612AB5FF46772AD62B85610"
-    },
-    {
-        "Id":  "chromium",
-        "Name":  "Chromium",
-        "Pattern":  "Chromium_*.exe",
-        "Type":  "exe",
-        "SilentArgs":  "--silent --install",
-        "SHA256":  "108B3ECED876B2CE548A90A93915D4684D4BEED4CC4466AEADEC4AF4251579C9"
-    },
-    {
-        "Id":  "firefox",
-        "Name":  "Firefox",
-        "Pattern":  "Firefox Setup *.exe",
-        "Type":  "exe",
-        "SilentArgs":  "-ms",
-        "SHA256":  "E3898AA945F31D7FADAE28FE5F1183E15EEDD9A545323FD1979631B9866948D9"
-    },
-    {
-        "Id":  "foxit",
-        "Name":  "Foxit Reader",
-        "Pattern":  "Foxit.Reader*.exe",
-        "Type":  "exe",
-        "SilentArgs":  "/quiet /norestart",
-        "SHA256":  "DC7174EB8C9B62F0BBE274F3350CF3C67BD72F13BAFED7B5A88311AB00CD3972"
-    },
-    {
-        "Id":  "gom",
-        "Name":  "GOM Player",
-        "Pattern":  "GOM.Player*.exe",
-        "Type":  "exe",
-        "SilentArgs":  "/S",
-        "SHA256":  "B0AC05F186CC86F5917E1F23DB5EDD19326FC8455450EC6AB9CAAA37E2AE3A82"
-    },
-    {
-        "Id":  "chrome",
-        "Name":  "Google Chrome",
-        "Pattern":  "Google.Chrome*.exe",
-        "Type":  "exe",
-        "SilentArgs":  "/silent /install",
-        "SHA256":  "2A9B18526096B614FBFDA4324280FC69316E42DCB0668301F2CD8A4524054664"
-    },
-    {
-        "Id":  "klite",
-        "Name":  "K-Lite Codec Pack",
-        "Pattern":  "K-Lite_Codec_Pack*.exe",
-        "Type":  "exe",
-        "SilentArgs":  "/verysilent /norestart",
-        "SHA256":  "522319BCA55FA227E2A0D6F346FC5527978F3B986089338D6B0F40CF1635E717"
-    },
-    {
-        "Id":  "libreoffice",
-        "Name":  "LibreOffice",
-        "Pattern":  "LibreOffice*.msi",
-        "Type":  "msi",
-        "SilentArgs":  "/qn /norestart",
-        "SHA256":  "F15BA07BFCB0186986CF3171063506F5D207C11F8CC051BA0D135209E9E915F9"
-    },
-    {
-        "Id":  "notepadpp",
-        "Name":  "Notepad++",
-        "Pattern":  "Notepad++*.exe",
-        "Type":  "exe",
-        "SilentArgs":  "/S",
-        "SHA256":  "CB902F8A9628324DBE5233B5202E716EA469720C9A1AC968007DF2288E4ED2EA"
-    },
-    {
-        "Id":  "poweriso",
-        "Name":  "PowerISO",
-        "Pattern":  "PowerISO*.exe",
-        "Type":  "exe",
-        "SilentArgs":  "/S",
-        "SHA256":  "7B5C0E774CB08B50B06CE3EEA79852D3302D2DD7316357027BDB044DE588ECBE"
-    },
-    {
-        "Id":  "telegram",
-        "Name":  "Telegram Desktop",
-        "Pattern":  "Telegram_*.exe",
-        "Type":  "exe",
-        "SilentArgs":  "/VERYSILENT /NORESTART",
-        "SHA256":  "13421C8EFEDFE4B910D68BF45E2F16FA33E098F11DA881EDFA8AF6E1BA67C47E"
-    },
-    {
-        "Id":  "vlc",
-        "Name":  "VLC",
-        "Pattern":  "vlc-*.exe",
-        "Type":  "exe",
-        "SilentArgs":  "/S",
-        "SHA256":  "20AD191348684B470DDC4E05204316F3D8E39655F412B3E392A0EEF97639DAAF"
-    },
-    {
-        "Id":  "whatsapp",
-        "Name":  "WhatsApp",
-        "Pattern":  "WhatsApp*.msixbundle",
-        "Type":  "msixbundle",
-        "SilentArgs":  "",
-        "SHA256":  "8A7D0E65E0E8D056727BC0782351F9C46E5038A16EB73C2FD2B31D0CB4471E13"
-    },
-    {
-        "Id":  "winrar",
-        "Name":  "WinRAR",
-        "Pattern":  "Winrar*.exe",
-        "Type":  "exe",
-        "SilentArgs":  "/S",
-        "SHA256":  "0C9A2A3D70D907CB8EE14AB00F6C97B17CE0E88D937A0F85B310698C2F2541DE"
-    },
-    {
-        "Id":  "zoom",
-        "Name":  "Zoom",
-        "Pattern":  "ZoomInstallerFull.exe",
-        "Type":  "exe",
-        "SilentArgs":  "/silent",
-        "SHA256":  "77C161702500CDE913C5B5281E9C8E790C27C80D87423B20807DB9E14DC4B67A"
-    },
-    {
-        "Id":  "kaspersky",
-        "Name":  "Kaspersky Antivirus Offline",
-        "Pattern":  "kav*.exe",
-        "Type":  "manual",
-        "SilentArgs":  "",
-        "SHA256":  "9DA279A9B4141A25B6E0DD20869721A8B4EF756D33688285C8A295BBB1F1A3E8"
-    }
+[
+  {
+    "Id": "360",
+    "Name": "360 Total Security",
+    "Pattern": "360TS_Setup_*.exe",
+    "Type": "exe",
+    "SilentArgs": "/S",
+    "SHA256": "81F8C22E3151EDEAA892B4E01E8E2C878FD02FBA6F24709786A8521D3091AD0F"
+  },
+  {
+    "Id": "anydesk",
+    "Name": "AnyDesk",
+    "Pattern": "AnyDesk.exe",
+    "Type": "exe",
+    "SilentArgs": "--install \"C:\\Program Files (x86)\\AnyDesk\" --silent",
+    "SHA256": "C3BFCD713B4758D4D83FDF5929A6666554338386A59BC97932DEF37EF3B96613"
+  },
+  {
+    "Id": "brave",
+    "Name": "Brave Browser",
+    "Pattern": "Brave Browser_*.exe",
+    "Type": "exe",
+    "SilentArgs": "--install --silent",
+    "SHA256": "4E1D4CD8CCD99E1D1077F607A4C38E06D6017E87F612AB5FF46772AD62B85610"
+  },
+  {
+    "Id": "chromium",
+    "Name": "Chromium",
+    "Pattern": "Chromium_*.exe",
+    "Type": "exe",
+    "SilentArgs": "--silent --install",
+    "SHA256": "108B3ECED876B2CE548A90A93915D4684D4BEED4CC4466AEADEC4AF4251579C9"
+  },
+  {
+    "Id": "firefox",
+    "Name": "Firefox",
+    "Pattern": "Firefox Setup *.exe",
+    "Type": "exe",
+    "SilentArgs": "-ms",
+    "SHA256": "E3898AA945F31D7FADAE28FE5F1183E15EEDD9A545323FD1979631B9866948D9"
+  },
+  {
+    "Id": "foxit",
+    "Name": "Foxit Reader",
+    "Pattern": "Foxit.Reader*.exe",
+    "Type": "exe",
+    "SilentArgs": "/quiet /norestart",
+    "SHA256": "DC7174EB8C9B62F0BBE274F3350CF3C67BD72F13BAFED7B5A88311AB00CD3972"
+  },
+  {
+    "Id": "gom",
+    "Name": "GOM Player",
+    "Pattern": "GOM.Player*.exe",
+    "Type": "exe",
+    "SilentArgs": "/S",
+    "SHA256": "B0AC05F186CC86F5917E1F23DB5EDD19326FC8455450EC6AB9CAAA37E2AE3A82"
+  },
+  {
+    "Id": "chrome",
+    "Name": "Google Chrome",
+    "Pattern": "Google.Chrome*.exe",
+    "Type": "exe",
+    "SilentArgs": "/silent /install",
+    "SHA256": "2A9B18526096B614FBFDA4324280FC69316E42DCB0668301F2CD8A4524054664"
+  },
+  {
+    "Id": "klite",
+    "Name": "K-Lite Codec Pack",
+    "Pattern": "K-Lite_Codec_Pack*.exe",
+    "Type": "exe",
+    "SilentArgs": "/verysilent /norestart",
+    "SHA256": "522319BCA55FA227E2A0D6F346FC5527978F3B986089338D6B0F40CF1635E717"
+  },
+  {
+    "Id": "libreoffice",
+    "Name": "LibreOffice",
+    "Pattern": "LibreOffice*.msi",
+    "Type": "msi",
+    "SilentArgs": "/qn /norestart",
+    "SHA256": "F15BA07BFCB0186986CF3171063506F5D207C11F8CC051BA0D135209E9E915F9"
+  },
+  {
+    "Id": "notepadpp",
+    "Name": "Notepad++",
+    "Pattern": "Notepad++*.exe",
+    "Type": "exe",
+    "SilentArgs": "/S",
+    "SHA256": "CB902F8A9628324DBE5233B5202E716EA469720C9A1AC968007DF2288E4ED2EA"
+  },
+  {
+    "Id": "poweriso",
+    "Name": "PowerISO",
+    "Pattern": "PowerISO*.exe",
+    "Type": "exe",
+    "SilentArgs": "/S",
+    "SHA256": "7B5C0E774CB08B50B06CE3EEA79852D3302D2DD7316357027BDB044DE588ECBE"
+  },
+  {
+    "Id": "telegram",
+    "Name": "Telegram Desktop",
+    "Pattern": "Telegram_*.exe",
+    "Type": "exe",
+    "SilentArgs": "/VERYSILENT /NORESTART",
+    "SHA256": "13421C8EFEDFE4B910D68BF45E2F16FA33E098F11DA881EDFA8AF6E1BA67C47E"
+  },
+  {
+    "Id": "vlc",
+    "Name": "VLC",
+    "Pattern": "vlc-*.exe",
+    "Type": "exe",
+    "SilentArgs": "/S",
+    "SHA256": "20AD191348684B470DDC4E05204316F3D8E39655F412B3E392A0EEF97639DAAF"
+  },
+  {
+    "Id": "whatsapp",
+    "Name": "WhatsApp",
+    "Pattern": "WhatsApp*.msixbundle",
+    "Type": "msixbundle",
+    "SilentArgs": "",
+    "SHA256": "8A7D0E65E0E8D056727BC0782351F9C46E5038A16EB73C2FD2B31D0CB4471E13"
+  },
+  {
+    "Id": "winrar",
+    "Name": "WinRAR",
+    "Pattern": "Winrar*.exe",
+    "Type": "exe",
+    "SilentArgs": "/S",
+    "SHA256": "0C9A2A3D70D907CB8EE14AB00F6C97B17CE0E88D937A0F85B310698C2F2541DE"
+  },
+  {
+    "Id": "zoom",
+    "Name": "Zoom",
+    "Pattern": "ZoomInstallerFull.exe",
+    "Type": "exe",
+    "SilentArgs": "/silent",
+    "SHA256": "77C161702500CDE913C5B5281E9C8E790C27C80D87423B20807DB9E14DC4B67A"
+  },
+  {
+    "Id": "kaspersky",
+    "Name": "Kaspersky Antivirus Offline",
+    "Pattern": "kav*.exe",
+    "Type": "manual",
+    "SilentArgs": "",
+    "SHA256": "9DA279A9B4141A25B6E0DD20869721A8B4EF756D33688285C8A295BBB1F1A3E8"
+  },
+  {
+    "Id": "vcredist-x64",
+    "Name": "Microsoft Visual C++ Redistributable x64",
+    "Pattern": "Microsoft Visual C++ v14 Redistributable (x64)*.exe",
+    "Type": "exe",
+    "SilentArgs": "/install /quiet /norestart",
+        "SHA256": "9C02C9ED120F671B900E6B9471D890E3B2414117A7E53F4AE2E855466FA2B7C9"
+  },
+  {
+    "Id": "vcredist-x86",
+    "Name": "Microsoft Visual C++ Redistributable x86",
+    "Pattern": "Microsoft Visual C++ v14 Redistributable (x86)*.exe",
+    "Type": "exe",
+    "SilentArgs": "/install /quiet /norestart",
+    "SHA256": "7B0117E6E20E9E349029C000A8A2715A52CF37C15B6BB697B2908E8BC7066CDF"
+  },
+  {
+    "Id": "dotnet-desktop-x64",
+    "Name": ".NET Desktop Runtime 9 x64",
+    "Pattern": "Microsoft .NET Windows Desktop Runtime 9.0*X64*.exe",
+    "Type": "exe",
+    "SilentArgs": "/install /quiet /norestart",
+    "SHA256": "EEFB60BD0F3FB33C0787074CEBC0467FFBA32BCB01088613121649FC3BDB4A27"
+  },
+  {
+    "Id": "dotnet-desktop-x86",
+    "Name": ".NET Desktop Runtime 9 x86",
+    "Pattern": "Microsoft .NET Windows Desktop Runtime 9.0*X86*.exe",
+    "Type": "exe",
+    "SilentArgs": "/install /quiet /norestart",
+    "SHA256": "8EC9C835BD1DA748E18E100201F5A9551521B94C0165F19546749B72CBCCD487"
+  },
+  {
+    "Id": "crystaldiskinfo",
+    "Name": "CrystalDiskInfo",
+    "Pattern": "CrystalDiskInfo_9.9.5*.exe",
+    "Type": "exe",
+    "SilentArgs": "/VERYSILENT /NORESTART",
+    "SHA256": "17CF38131D89003C666D499CCB62B5B9418B0127D7F362AEEFEAA048481A8912"
+  },
+  {
+    "Id": "googledrive",
+    "Name": "Google Drive for desktop",
+    "Pattern": "Google.Drive*.exe",
+    "Type": "exe",
+    "SilentArgs": "--silent",
+    "SHA256": "2CB39F4B8E640944C83E7EEE34F0F886B58DF23FA4141C225714CD6646B96575"
+  },
+  {
+    "Id": "google-search-desktop",
+    "Name": "Google app for desktop",
+    "Pattern": "GoogleAppInstaller.exe",
+    "Type": "manual",
+    "SilentArgs": "",
+    "SHA256": ""
+  }
 ]
