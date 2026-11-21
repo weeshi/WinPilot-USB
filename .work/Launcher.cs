@@ -36,6 +36,11 @@ internal sealed class MainForm : Form
     private ProgressBar progress;
     private RichTextBox output;
     private Button install;
+    private Button updateButton;
+    private UpdateRelease availableUpdate;
+    private bool checkingUpdate;
+    private bool downloadingUpdate;
+    private readonly System.Threading.CancellationTokenSource updateCancellation = new System.Threading.CancellationTokenSource();
     private Process currentProcess;
     private AppRow currentApp;
     private Timer progressTimer;
@@ -82,18 +87,22 @@ internal sealed class MainForm : Form
         };
         var identity = new Panel { Dock = DockStyle.Fill, Margin = new Padding(6, 0, 0, 0), BackColor = Color.Transparent };
         var topBar = new TableLayoutPanel {
-            Dock = DockStyle.Top, Height = 42, ColumnCount = 3, RowCount = 1,
+            Dock = DockStyle.Top, Height = 42, ColumnCount = 4, RowCount = 1,
             BackColor = Color.FromArgb(14, 24, 45), BorderStyle = BorderStyle.FixedSingle,
             Padding = new Padding(8, 0, 8, 0)
         };
-        topBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 27F));
-        topBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 38F));
-        topBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35F));
+        topBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22F));
+        topBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
+        topBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 23F));
+        topBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
         topBar.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         var drive = new Label { Text = "USB  •  Local Apps", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(170, 190, 210), Font = new Font("Consolas", 8F) };
-        var engine = new Label { Text = "Offline Engine  •  V1.0", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(67, 220, 200), Font = new Font("Consolas", 8F) };
+        var engine = new Label { Text = "Offline Engine  •  V" + UpdateClient.CurrentVersionText, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(67, 220, 200), Font = new Font("Consolas", 8F) };
+        updateButton = new Button { Text = "↻  Check updates", Dock = DockStyle.Fill, Margin = new Padding(3, 5, 3, 5), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(20, 42, 62), ForeColor = Color.FromArgb(90, 220, 230), Font = new Font("Segoe UI", 8F), AccessibleName = "checkForUpdates", Cursor = Cursors.Hand };
+        updateButton.FlatAppearance.BorderColor = Color.FromArgb(45, 94, 115);
+        updateButton.Click += async (s, e) => await HandleUpdateClick();
         var topTitle = new Label { Text = "Weeshi USB Installer", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI Semibold", 9F) };
-        topBar.Controls.Add(drive, 0, 0); topBar.Controls.Add(engine, 1, 0); topBar.Controls.Add(topTitle, 2, 0);
+        topBar.Controls.Add(drive, 0, 0); topBar.Controls.Add(engine, 1, 0); topBar.Controls.Add(updateButton, 2, 0); topBar.Controls.Add(topTitle, 3, 0);
         var branding = new TableLayoutPanel {
             Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Padding = new Padding(4, 8, 4, 0),
             BackColor = Color.Transparent
@@ -122,6 +131,7 @@ internal sealed class MainForm : Form
         Shown += async (s, e) => { adRefreshTimer.Start(); await RefreshOnlineAds(); };
         FormClosed += (s, e) => {
             adCancellation.Cancel();
+            updateCancellation.Cancel();
             adRefreshTimer.Dispose(); adTimer.Dispose();
             if (adPicture.Image != null) { adPicture.Image.Dispose(); adPicture.Image = null; }
         };
@@ -172,12 +182,13 @@ internal sealed class MainForm : Form
 
         progress = new ProgressBar { Location = new Point(38, 715), Size = new Size(1214, 14), Minimum = 0, Maximum = 100, Style = ProgressBarStyle.Continuous, AccessibleName = "installProgress" };
         output = new RichTextBox { Location = new Point(38, 737), Size = new Size(1214, 35), ReadOnly = true, BackColor = Color.FromArgb(6, 11, 22), ForeColor = Color.FromArgb(198, 231, 230), Font = new Font("Consolas", 9F), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "installLog", Text = "[READY]  حدد البرامج التي تريد تثبيتها ثم اضغط تثبيت صامت.\r\n" };
-        var versionLabel = new Label { Text = "V1.0   →   WeeshiTech Solutions © 2025", AutoSize = true, Location = new Point(38, 782), ForeColor = Color.FromArgb(125, 145, 170), Font = new Font("Consolas", 8.5F), AccessibleName = "applicationVersion" };
+        var versionLabel = new Label { Text = "V" + UpdateClient.CurrentVersionText + "   →   WeeshiTech Solutions © 2025", AutoSize = true, Location = new Point(38, 782), ForeColor = Color.FromArgb(125, 145, 170), Font = new Font("Consolas", 8.5F), AccessibleName = "applicationVersion" };
         var footerStatus = new Label { Text = "جاهز للاستخدام  •  READY", AutoSize = true, Location = new Point(1090, 782), ForeColor = Color.FromArgb(91, 215, 164), Font = new Font("Segoe UI", 8.5F) };
         Controls.AddRange(new Control[] { progress, output, versionLabel, footerStatus });
         progressTimer = new Timer { Interval = 350 };
         progressTimer.Tick += (s, e) => UpdateProgressEstimate();
         Shown += async (s, e) => await LoadAppsAsync();
+        Shown += async (s, e) => await CheckForUpdatesAsync(true);
     }
 
     private void BuildToolCards()
@@ -280,6 +291,57 @@ internal sealed class MainForm : Form
                 onlineAds.Clear(); adIndex = 0; ShowNextAd();
             }
         } finally { fetchingAds = false; }
+    }
+
+    private async Task CheckForUpdatesAsync(bool silent)
+    {
+        if (checkingUpdate || downloadingUpdate || IsDisposed) return;
+        checkingUpdate = true; updateButton.Enabled = false; updateButton.Text = "Checking...";
+        try {
+            availableUpdate = await UpdateClient.GetLatestAsync(updateCancellation.Token);
+            if (availableUpdate == null) {
+                updateButton.Text = "✓  Up to date"; updateButton.ForeColor = Color.FromArgb(91, 215, 164);
+                if (!silent) MessageBox.Show("لديك أحدث إصدار من WinPilot.\nYou have the latest version.", "Updates", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            } else {
+                updateButton.Text = "↓  Update V" + availableUpdate.Version.ToString(3);
+                updateButton.BackColor = Color.FromArgb(30, 120, 76); updateButton.ForeColor = Color.White;
+            }
+        } catch (OperationCanceledException) { updateButton.Text = "↻  Check updates"; }
+          catch (Exception ex) {
+            updateButton.Text = "↻  Check updates"; updateButton.ForeColor = Color.FromArgb(90, 220, 230);
+            Trace.WriteLine("Update check: " + ex.Message);
+            if (!silent) MessageBox.Show("تعذر فحص التحديثات. تحقق من اتصال الإنترنت ثم حاول مجددًا.\n\n" + ex.Message, "Updates", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        } finally { checkingUpdate = false; if (!IsDisposed) updateButton.Enabled = true; }
+    }
+
+    private async Task HandleUpdateClick()
+    {
+        if (checkingUpdate || downloadingUpdate) return;
+        if (availableUpdate == null) { await CheckForUpdatesAsync(false); if (availableUpdate == null) return; }
+        var notes = string.IsNullOrWhiteSpace(availableUpdate.Notes) ? "" : "\n\n" + availableUpdate.Notes.Trim();
+        if (notes.Length > 900) notes = notes.Substring(0, 900) + "...";
+        if (MessageBox.Show("يتوفر تحديث WinPilot V" + availableUpdate.Version.ToString(3) + ".\nسيتم تنزيله والتحقق منه ثم إعادة تشغيل التطبيق." + notes + "\n\nهل تريد المتابعة؟",
+            "WinPilot Update", MessageBoxButtons.YesNo, MessageBoxIcon.Information) != DialogResult.Yes) return;
+        var updater = Path.Combine(root, "WinPilot-Updater.exe");
+        if (!File.Exists(updater)) { MessageBox.Show("WinPilot-Updater.exe غير موجود بجانب التطبيق. أعد نسخ حزمة V1.1.0 كاملة.", "Updates", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
+        downloadingUpdate = true; updateButton.Enabled = false; install.Enabled = false; progress.Value = 0;
+        try {
+            status.Text = "جاري تنزيل التحديث  —  Downloading update";
+            var reporter = new Progress<int>(value => { progress.Value = Math.Max(0, Math.Min(100, value)); updateButton.Text = "Downloading " + value + "%"; });
+            var package = await UpdateClient.DownloadAsync(availableUpdate, reporter, updateCancellation.Token);
+            var temporaryUpdater = Path.Combine(Path.GetDirectoryName(package), "WinPilot-Updater.exe");
+            File.Copy(updater, temporaryUpdater, true);
+            status.Text = "تم التحقق من SHA-256  —  Applying update";
+            var arguments = "--package " + UpdateClient.Quote(package) + " --target " + UpdateClient.Quote(root)
+                + " --pid " + Process.GetCurrentProcess().Id + " --restart " + UpdateClient.Quote("WinPilot-USB.exe");
+            Process.Start(new ProcessStartInfo { FileName = temporaryUpdater, Arguments = arguments, WorkingDirectory = root, UseShellExecute = true, Verb = "runas" });
+            BeginInvoke((Action)(() => Close()));
+        } catch (OperationCanceledException) { status.Text = "تم إلغاء التحديث  —  Update cancelled"; }
+          catch (Exception ex) { MessageBox.Show("فشل تنزيل أو تشغيل التحديث.\n\n" + ex.Message, "Updates", MessageBoxButtons.OK, MessageBoxIcon.Error); status.Text = "فشل التحديث  —  Update failed"; }
+        finally {
+            downloadingUpdate = false;
+            if (!IsDisposed) { updateButton.Enabled = true; install.Enabled = true; if (availableUpdate != null) updateButton.Text = "↓  Update V" + availableUpdate.Version.ToString(3); }
+        }
     }
 
     private string ReadContactInfo()

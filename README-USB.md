@@ -4,14 +4,14 @@
 
 ## الحالة الحالية
 
-- الإصدار البرمجي: `1.0.0.0`
+- الإصدار البرمجي: `1.1.0.0`
 - البنية: Windows x86/32-bit، وتعمل على Windows 10 وWindows 11 عبر WoW64.
 - المصدر المفتوح: [GitHub](https://github.com/weeshi/WinPilot-USB)
 - التوقيع الرقمي: مجهز في Workflow، لكنه ينتظر قبول SignPath Foundation.
 
 ## البناء والتوقيع
 
-ملف `WinPilot-USB.csproj` وأداة `scripts\Build-WinPilot.ps1` يعيدان بناء الملف بإصدار `1.0.0.0` وبنية x86:
+ملفا `WinPilot-USB.csproj` و`WinPilot-Updater.csproj` وأداة `scripts\Build-WinPilot.ps1` يعيدون بناء التطبيق والمحدث بإصدار `1.1.0.0` وبنية x86:
 
 ```powershell
 .\scripts\Build-WinPilot.ps1 -Clean
@@ -42,8 +42,10 @@
 ## الملفات المهمة
 
 - `WinPilot-USB.exe`: الملف التنفيذي المبني.
+- `WinPilot-Updater.exe`: المحدث المستقل الذي يستبدل الملفات بعد إغلاق التطبيق.
 - `WinPilot-USB.csproj`: مشروع البناء القابل لإعادة الإنتاج.
 - `.github/workflows/release.yml`: البناء وSHA-256 وGitHub Releases وSignPath.
+- إصدارات GitHub تنتج `WinPilot-USB-Update.zip` و`WinPilot-USB-Update.sha256` للتحديث الذاتي.
 - `scripts/Build-WinPilot.ps1`: البناء والتوقيع الاختياري.
 - `scripts/Update-InstallerHashes.ps1`: تحديث SHA-256 للمثبتات.
 - `scripts/Install-LocalApps.ps1`: اكتشاف وتشغيل التثبيت الصامت.

@@ -2,6 +2,7 @@ Apps/*
 !Apps/.gitkeep
 bin/
 obj/
+release-local/
 *.exe
 scripts/logs/
 scripts/windows-update-state.json

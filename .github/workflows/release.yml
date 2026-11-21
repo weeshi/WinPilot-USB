@@ -18,13 +18,25 @@ jobs:
           dotnet-version: '9.0.x'
       - name: Build
         shell: pwsh
-        run: dotnet build .\WinPilot-USB.csproj -c Release --nologo
+        run: |
+          dotnet build .\WinPilot-USB.csproj -c Release --nologo
+          dotnet build .\WinPilot-Updater.csproj -c Release --nologo
       - name: Prepare release files
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force release | Out-Null
+          New-Item -ItemType Directory -Force package\scripts | Out-Null
           Copy-Item .\bin\Release\net48\WinPilot-USB.exe .\release\WinPilot-USB.exe
-          Get-FileHash .\release\WinPilot-USB.exe -Algorithm SHA256 | Format-List | Out-File .\release\SHA256SUMS.txt -Encoding utf8
+          Copy-Item .\bin\Release\net48\WinPilot-Updater.exe .\release\WinPilot-Updater.exe
+          Copy-Item .\release\WinPilot-USB.exe .\package\WinPilot-USB.exe
+          Copy-Item .\release\WinPilot-Updater.exe .\package\WinPilot-Updater.exe
+          Copy-Item .\assets .\package\assets -Recurse
+          Copy-Item .\logo.png,.\logo.ico .\package
+          Copy-Item .\scripts\Install-LocalApps.ps1,.\scripts\Disable-Windows-Updates.ps1,.\scripts\MAS_AIO.cmd,.\scripts\local-apps.json .\package\scripts
+          Compress-Archive -Path .\package\* -DestinationPath .\release\WinPilot-USB-Update.zip -CompressionLevel Optimal
+          $updateHash = (Get-FileHash .\release\WinPilot-USB-Update.zip -Algorithm SHA256).Hash
+          "$updateHash  WinPilot-USB-Update.zip" | Out-File .\release\WinPilot-USB-Update.sha256 -Encoding ascii
+          Get-FileHash .\release\WinPilot-USB.exe,.\release\WinPilot-Updater.exe,.\release\WinPilot-USB-Update.zip -Algorithm SHA256 | Format-Table -AutoSize | Out-File .\release\SHA256SUMS.txt -Encoding utf8
       - name: Upload unsigned artifact
         uses: actions/upload-artifact@v4
         with:
@@ -36,6 +48,9 @@ jobs:
         with:
           files: |
             release/WinPilot-USB.exe
+            release/WinPilot-Updater.exe
+            release/WinPilot-USB-Update.zip
+            release/WinPilot-USB-Update.sha256
             release/SHA256SUMS.txt
 
   signpath:

@@ -6,22 +6,25 @@
     <Prefer32Bit>true</Prefer32Bit>
     <AssemblyName>WinPilot-USB</AssemblyName>
     <RootNamespace>WinPilotUSB</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <ApplicationIcon>logo.ico</ApplicationIcon>
     <ApplicationManifest>.work\app.manifest</ApplicationManifest>
     <LangVersion>latest</LangVersion>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Version>1.0.0.0</Version>
-    <FileVersion>1.0.0.0</FileVersion>
-    <InformationalVersion>1.0</InformationalVersion>
+    <Version>1.1.0.0</Version>
+    <FileVersion>1.1.0.0</FileVersion>
+    <InformationalVersion>1.1.0</InformationalVersion>
     <Company>WeeshiTech Solutions</Company>
     <Product>Weeshi USB Installer</Product>
     <Description>Offline USB installer and maintenance utility</Description>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include=".work\Launcher.cs" />
+    <Compile Include=".work\UpdateClient.cs" />
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Net.Http" />
+    <Reference Include="System.Security" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Web.Extensions" />
   </ItemGroup>
