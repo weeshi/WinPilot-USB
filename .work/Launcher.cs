@@ -130,7 +130,7 @@ internal sealed class MainForm : Form
         selectAll.CheckedChanged += (s, e) => { if (!refreshing) SetAllChecked(selectAll.Checked); };
         var clearTop = MakeButton("إلغاء التحديد  |  Clear", 205, 168, 135, (s, e) => { checkedIds.Clear(); ApplyFilter(); });
         countLabel = new Label { Text = "0 selected", AutoSize = true, Location = new Point(365, 175), ForeColor = Color.FromArgb(180, 190, 198) };
-        install = MakeButton("⚡  تثبيت صامت  |  Install silently", 38, 215, 300, (s, e) => StartInstall());
+        install = MakeButton("⚡  تثبيت صامت  |  Install silently", 38, 207, 598, (s, e) => StartInstall());
         install.BackColor = Color.FromArgb(36, 150, 92);
         install.FlatAppearance.BorderColor = Color.FromArgb(93, 225, 145);
 
@@ -177,12 +177,12 @@ internal sealed class MainForm : Form
         Controls.AddRange(new Control[] { progress, output, versionLabel, footerStatus });
         progressTimer = new Timer { Interval = 350 };
         progressTimer.Tick += (s, e) => UpdateProgressEstimate();
-        Load += (s, e) => LoadApps();
+        Shown += async (s, e) => await LoadAppsAsync();
     }
 
     private void BuildToolCards()
     {
-        var grid = new Panel { Location = new Point(38, 215), Size = new Size(598, 435), BackColor = Color.FromArgb(18, 30, 50), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "toolsGrid" };
+        var grid = new Panel { Location = new Point(38, 249), Size = new Size(598, 416), BackColor = Color.FromArgb(18, 30, 50), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "toolsGrid" };
         Controls.Add(grid);
         toolsGrid = grid;
         AddImageCard(10, 10, "Office", "Microsoft Office  •  2019–2021", Path.Combine(root, "assets", "office-card.png"), (s, e) => OpenOfficeInstaller());
@@ -325,17 +325,60 @@ internal sealed class MainForm : Form
         try { Process.Start(new ProcessStartInfo { FileName = file, WorkingDirectory = Path.GetDirectoryName(file), UseShellExecute = true, Verb = "runas" }); output.AppendText("\r\nStarted normal installer: " + Path.GetFileName(file) + "\r\n"); } catch (Exception ex) { MessageBox.Show(ex.Message, "Installer", MessageBoxButtons.OK, MessageBoxIcon.Error); }
     }
 
+    private static bool FileNameMatches(string file, string pattern)
+    {
+        var expression = "^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$";
+        return Regex.IsMatch(Path.GetFileName(file), expression, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    }
+
+    private List<AppRow> ScanApps()
+    {
+        if (!File.Exists(ManifestPath())) throw new FileNotFoundException("Missing scripts\\local-apps.json");
+        if (!Directory.Exists(AppsPath())) throw new DirectoryNotFoundException("Missing Apps folder beside WinPilot-USB.exe");
+        var data = new JavaScriptSerializer().DeserializeObject(File.ReadAllText(ManifestPath())) as object[];
+        var files = Directory.GetFiles(AppsPath(), "*", SearchOption.AllDirectories);
+        var found = new List<AppRow>();
+        if (data != null) foreach (var raw in data) {
+            var item = raw as Dictionary<string, object>;
+            if (item == null) continue;
+            var row = new AppRow { Id = Value(item, "Id"), Name = Value(item, "Name"), Pattern = Value(item, "Pattern"), Type = Value(item, "Type") };
+            row.File = Array.Find(files, file => FileNameMatches(file, row.Pattern));
+            if (row.File != null) {
+                row.Version = DetectVersion(row.File);
+                row.Category = CategoryFor(row.Id);
+                found.Add(row);
+            }
+        }
+        found.Sort((a, b) => { int c = Array.IndexOf(Categories, a.Category).CompareTo(Array.IndexOf(Categories, b.Category)); return c != 0 ? c : StringComparer.OrdinalIgnoreCase.Compare(a.Name, b.Name); });
+        return found;
+    }
+
+    private void BindApps(List<AppRow> found)
+    {
+        allApps.Clear(); allApps.AddRange(found); appList.Items.Clear();
+        ApplyFilter(); progress.Value = 0; status.Text = ""; currentLabel.Text = "";
+        output.Text = "تم فحص مجلد Apps. اختر البرامج التي تريد تثبيتها.\r\nApps folder scanned. Select the applications to install.\r\n";
+    }
+
+    private void ShowScanError(Exception ex)
+    {
+        status.Text = "خطأ في الفحص  —  Scan error"; output.Text = ex.Message;
+        MessageBox.Show(ex.Message, "Weeshi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+    }
+
     private void LoadApps()
     {
-        try
-        {
-            if (!File.Exists(ManifestPath())) throw new FileNotFoundException("Missing scripts\\local-apps.json"); if (!Directory.Exists(AppsPath())) throw new DirectoryNotFoundException("Missing Apps folder beside WinPilot-USB.exe");
-            var data = new JavaScriptSerializer().DeserializeObject(File.ReadAllText(ManifestPath())) as object[]; allApps.Clear(); appList.Items.Clear();
-            if (data != null) foreach (var raw in data) { var item = raw as Dictionary<string, object>; if (item == null) continue; var row = new AppRow { Id = Value(item, "Id"), Name = Value(item, "Name"), Pattern = Value(item, "Pattern"), Type = Value(item, "Type") }; var files = Directory.GetFiles(AppsPath(), row.Pattern, SearchOption.AllDirectories); if (files.Length > 0) { row.File = files[0]; row.Version = DetectVersion(row.File); row.Category = CategoryFor(row.Id); allApps.Add(row); } }
-            allApps.Sort((a, b) => { int c = Array.IndexOf(Categories, a.Category).CompareTo(Array.IndexOf(Categories, b.Category)); return c != 0 ? c : StringComparer.OrdinalIgnoreCase.Compare(a.Name, b.Name); });
-            ApplyFilter(); progress.Value = 0; status.Text = ""; currentLabel.Text = ""; output.Text = "تم فحص مجلد Apps. اختر البرامج التي تريد تثبيتها.\r\nApps folder scanned. Select the applications to install.\r\n";
-        }
-        catch (Exception ex) { status.Text = "خطأ في الفحص  —  Scan error"; output.Text = ex.Message; MessageBox.Show(ex.Message, "Weeshi", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+        try { BindApps(ScanApps()); }
+        catch (Exception ex) { ShowScanError(ex); }
+    }
+
+    private async Task LoadAppsAsync()
+    {
+        status.Text = "جاري فحص البرامج  —  Scanning";
+        install.Enabled = false;
+        try { BindApps(await Task.Run(() => ScanApps())); }
+        catch (Exception ex) { ShowScanError(ex); }
+        finally { install.Enabled = true; }
     }
     private string Value(Dictionary<string, object> item, string key) { return item.ContainsKey(key) && item[key] != null ? Convert.ToString(item[key]) : ""; }
     private string DetectVersion(string file) { try { var info = FileVersionInfo.GetVersionInfo(file); if (!string.IsNullOrWhiteSpace(info.ProductVersion)) return info.ProductVersion.Trim(); if (!string.IsNullOrWhiteSpace(info.FileVersion)) return info.FileVersion.Trim(); } catch { } var match = Regex.Match(Path.GetFileName(file), @"\d+(?:\.\d+){1,4}"); return match.Success ? match.Value : "Version unknown"; }
