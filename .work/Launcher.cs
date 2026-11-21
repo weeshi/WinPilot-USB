@@ -52,20 +52,55 @@ internal sealed class MainForm : Form
         ForeColor = Color.White;
         Font = new Font("Segoe UI", 10F);
 
-        var topBar = new Panel { Location = new Point(18, 12), Size = new Size(1254, 42), BackColor = Color.FromArgb(14, 24, 45), BorderStyle = BorderStyle.FixedSingle };
-        var topTitle = new Label { Text = "Weeshi USB Installer", AutoSize = true, Location = new Point(970, 11), ForeColor = Color.White, Font = new Font("Segoe UI Semibold", 11F) };
-        var engine = new Label { Text = "Offline Engine  •  v2.4 Pro", AutoSize = true, Location = new Point(710, 12), ForeColor = Color.FromArgb(67, 220, 200), Font = new Font("Consolas", 9F) };
-        var drive = new Label { Text = "USB  •  Local Apps", AutoSize = true, Location = new Point(24, 12), ForeColor = Color.FromArgb(170, 190, 210), Font = new Font("Consolas", 9F) };
-        topBar.Controls.AddRange(new Control[] { drive, engine, topTitle });
-        var logo = new PictureBox { Location = new Point(1162, 70), Size = new Size(78, 78), SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.Transparent, AccessibleName = "applicationLogo" };
-        logo.Image = LoadImageUnlocked(Path.Combine(root, "logo.png"));
-        var title = new Label { Text = "Weeshi USB Installer", Font = new Font("Segoe UI Semibold", 20F), AutoSize = true, Location = new Point(930, 76), ForeColor = Color.White };
-        var subtitle = new Label { Text = "تثبيت البرامج من الفلاش بنقرة واحدة بدون الحاجة إلى إنترنت", AutoSize = true, Location = new Point(850, 110), ForeColor = Color.FromArgb(180, 195, 215) };
-        var engineLabel = new Label { Text = "Silent Deploy\r\nEngine", AutoSize = true, Location = new Point(735, 82), ForeColor = Color.FromArgb(64, 220, 230), Font = new Font("Consolas", 10F) };
-        status = new Label { Text = "جاهز للاستخدام  •  READY", AutoSize = true, Location = new Point(1010, 143), ForeColor = Color.FromArgb(91, 215, 164), Font = new Font("Segoe UI", 9F) };
-        currentLabel = new Label { Text = "", AutoSize = true, Location = new Point(735, 143), ForeColor = Color.FromArgb(255, 211, 112), Font = new Font("Segoe UI", 9F) };
-        adPicture = new PictureBox { Location = new Point(60, 72), Size = new Size(640, 78), SizeMode = PictureBoxSizeMode.StretchImage, BackColor = Color.FromArgb(14, 24, 45), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "advertisement" };
-        Controls.AddRange(new Control[] { topBar, logo, title, subtitle, engineLabel, status, currentLabel, adPicture });
+        // Two equal header columns; the advertisement spans the full header height.
+        var header = new TableLayoutPanel {
+            Location = new Point(38, 12), Size = new Size(1214, 134),
+            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+            ColumnCount = 2, RowCount = 1, BackColor = Color.Transparent,
+            Margin = Padding.Empty, Padding = Padding.Empty, AccessibleName = "applicationHeader"
+        };
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+        header.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        adPicture = new PictureBox {
+            Dock = DockStyle.Fill, Margin = new Padding(0, 0, 6, 0),
+            SizeMode = PictureBoxSizeMode.StretchImage,
+            BackColor = Color.FromArgb(14, 24, 45), BorderStyle = BorderStyle.FixedSingle,
+            AccessibleName = "advertisement"
+        };
+        var identity = new Panel { Dock = DockStyle.Fill, Margin = new Padding(6, 0, 0, 0), BackColor = Color.Transparent };
+        var topBar = new TableLayoutPanel {
+            Dock = DockStyle.Top, Height = 42, ColumnCount = 3, RowCount = 1,
+            BackColor = Color.FromArgb(14, 24, 45), BorderStyle = BorderStyle.FixedSingle,
+            Padding = new Padding(8, 0, 8, 0)
+        };
+        topBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 27F));
+        topBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 38F));
+        topBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35F));
+        topBar.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        var drive = new Label { Text = "USB  •  Local Apps", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(170, 190, 210), Font = new Font("Consolas", 8F) };
+        var engine = new Label { Text = "Offline Engine  •  v" + Application.ProductVersion, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(67, 220, 200), Font = new Font("Consolas", 8F) };
+        var topTitle = new Label { Text = "Weeshi USB Installer", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI Semibold", 9F) };
+        topBar.Controls.Add(drive, 0, 0); topBar.Controls.Add(engine, 1, 0); topBar.Controls.Add(topTitle, 2, 0);
+        var branding = new TableLayoutPanel {
+            Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Padding = new Padding(4, 8, 4, 0),
+            BackColor = Color.Transparent
+        };
+        branding.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        branding.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 86F));
+        branding.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        var copy = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Margin = Padding.Empty };
+        copy.RowStyles.Add(new RowStyle(SizeType.Percent, 50F)); copy.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+        var title = new Label { Text = "Weeshi USB Installer", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Segoe UI Semibold", 19F), ForeColor = Color.White };
+        var subtitle = new Label { Text = "تثبيت البرامج من الفلاش بنقرة واحدة\r\nبدون الحاجة إلى إنترنت", Dock = DockStyle.Fill, TextAlign = ContentAlignment.TopRight, RightToLeft = RightToLeft.Yes, Font = new Font("Segoe UI", 9F), ForeColor = Color.FromArgb(180, 195, 215) };
+        copy.Controls.Add(title, 0, 0); copy.Controls.Add(subtitle, 0, 1);
+        var logo = new PictureBox { Dock = DockStyle.Fill, Margin = new Padding(8, 0, 0, 0), SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.Transparent, AccessibleName = "applicationLogo", Image = LoadImageUnlocked(Path.Combine(root, "logo.png")) };
+        branding.Controls.Add(copy, 0, 0); branding.Controls.Add(logo, 1, 0);
+        identity.Controls.Add(branding); identity.Controls.Add(topBar);
+        header.Controls.Add(adPicture, 0, 0); header.Controls.Add(identity, 1, 0);
+        status = new Label { Text = "جاهز للاستخدام  •  READY", AutoSize = true, Location = new Point(660, 675), ForeColor = Color.FromArgb(91, 215, 164), Font = new Font("Segoe UI", 9F) };
+        currentLabel = new Label { Text = "", AutoSize = true, Location = new Point(660, 695), ForeColor = Color.FromArgb(255, 211, 112), Font = new Font("Segoe UI", 9F) };
+        Controls.AddRange(new Control[] { header, status, currentLabel });
         LoadAds();
         adTimer = new Timer { Interval = 3000 };
         adTimer.Tick += (s, e) => ShowNextAd();
