@@ -79,7 +79,7 @@ internal sealed class MainForm : Form
         topBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35F));
         topBar.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         var drive = new Label { Text = "USB  •  Local Apps", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(170, 190, 210), Font = new Font("Consolas", 8F) };
-        var engine = new Label { Text = "Offline Engine  •  v" + Application.ProductVersion, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(67, 220, 200), Font = new Font("Consolas", 8F) };
+        var engine = new Label { Text = "Offline Engine  •  V1.0", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(67, 220, 200), Font = new Font("Consolas", 8F) };
         var topTitle = new Label { Text = "Weeshi USB Installer", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.White, Font = new Font("Segoe UI Semibold", 9F) };
         topBar.Controls.Add(drive, 0, 0); topBar.Controls.Add(engine, 1, 0); topBar.Controls.Add(topTitle, 2, 0);
         var branding = new TableLayoutPanel {
@@ -120,15 +120,34 @@ internal sealed class MainForm : Form
 
         var appHeader = new Label { Text = "البرامج المتاحة  |  Available applications", AutoSize = true, Location = new Point(660, 154), ForeColor = Color.FromArgb(61, 220, 235), Font = new Font("Segoe UI Semibold", 12F) };
         var search = new TextBox { Text = "بحث في البرامج المتاحة...", Location = new Point(1010, 150), Size = new Size(242, 25), BackColor = Color.FromArgb(8, 14, 30), ForeColor = Color.FromArgb(150, 170, 195), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "applicationSearch" };
-        var side = new Label { Text = "أدوات إضافية  |  Additional tools", AutoSize = true, Location = new Point(38, 182), ForeColor = Color.FromArgb(61, 220, 235), Font = new Font("Segoe UI Semibold", 12F) };
-        Controls.AddRange(new Control[] { selectAll, countLabel, appList, appHeader, search, side });
+        Controls.AddRange(new Control[] { selectAll, countLabel });
+        var applicationPanel = new Panel {
+            BackColor = Color.Transparent, AccessibleName = "availableApplicationsPanel"
+        };
+        appHeader.AutoSize = false;
+        appHeader.SetBounds(0, 0, 560, 26);
+        appHeader.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        search.SetBounds(0, 30, 560, 25);
+        search.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        appList.SetBounds(0, 61, 560, 386);
+        appList.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        applicationPanel.Controls.AddRange(new Control[] { appHeader, search, appList });
+        Controls.Add(applicationPanel);
+        Action alignApplications = () => {
+            int columnWidth = header.Width / 2;
+            int width = Math.Max(360, Math.Min(560, columnWidth - 36));
+            applicationPanel.SetBounds(header.Left + columnWidth + (columnWidth - width) / 2,
+                154, width, 447);
+        };
+        alignApplications();
+        header.SizeChanged += (s, e) => alignApplications();
         BuildToolCards();
 
         Controls.AddRange(new Control[] { clearTop, install });
 
         progress = new ProgressBar { Location = new Point(38, 715), Size = new Size(1214, 14), Minimum = 0, Maximum = 100, Style = ProgressBarStyle.Continuous, AccessibleName = "installProgress" };
         output = new RichTextBox { Location = new Point(38, 737), Size = new Size(1214, 35), ReadOnly = true, BackColor = Color.FromArgb(6, 11, 22), ForeColor = Color.FromArgb(198, 231, 230), Font = new Font("Consolas", 9F), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "installLog", Text = "[READY]  حدد البرامج التي تريد تثبيتها ثم اضغط تثبيت صامت.\r\n" };
-        var versionLabel = new Label { Text = "Version 1.0   →   WeeshiTech Solutions © 2025", AutoSize = true, Location = new Point(38, 782), ForeColor = Color.FromArgb(125, 145, 170), Font = new Font("Consolas", 8.5F), AccessibleName = "applicationVersion" };
+        var versionLabel = new Label { Text = "V1.0   →   WeeshiTech Solutions © 2025", AutoSize = true, Location = new Point(38, 782), ForeColor = Color.FromArgb(125, 145, 170), Font = new Font("Consolas", 8.5F), AccessibleName = "applicationVersion" };
         var footerStatus = new Label { Text = "جاهز للاستخدام  •  READY", AutoSize = true, Location = new Point(1090, 782), ForeColor = Color.FromArgb(91, 215, 164), Font = new Font("Segoe UI", 8.5F) };
         Controls.AddRange(new Control[] { progress, output, versionLabel, footerStatus });
         progressTimer = new Timer { Interval = 350 };
@@ -270,7 +289,7 @@ internal sealed class MainForm : Form
             if (!File.Exists(ManifestPath())) throw new FileNotFoundException("Missing scripts\\local-apps.json"); if (!Directory.Exists(AppsPath())) throw new DirectoryNotFoundException("Missing Apps folder beside WinPilot-USB.exe");
             var data = new JavaScriptSerializer().DeserializeObject(File.ReadAllText(ManifestPath())) as object[]; allApps.Clear(); appList.Items.Clear();
             if (data != null) foreach (var raw in data) { var item = raw as Dictionary<string, object>; if (item == null) continue; var row = new AppRow { Id = Value(item, "Id"), Name = Value(item, "Name"), Pattern = Value(item, "Pattern"), Type = Value(item, "Type") }; var files = Directory.GetFiles(AppsPath(), row.Pattern, SearchOption.AllDirectories); if (files.Length > 0) { row.File = files[0]; row.Version = DetectVersion(row.File); allApps.Add(row); appList.Items.Add(row, false); } }
-            selectAll.Checked = false; UpdateSelectionState(); progress.Value = 0; status.Text = allApps.Count + " برنامج متاح  —  " + allApps.Count + " programs found"; currentLabel.Text = ""; output.Text = "تم فحص مجلد Apps. اختر البرامج التي تريد تثبيتها.\r\nApps folder scanned. Select the applications to install.\r\n";
+            selectAll.Checked = false; UpdateSelectionState(); progress.Value = 0; status.Text = ""; currentLabel.Text = ""; output.Text = "تم فحص مجلد Apps. اختر البرامج التي تريد تثبيتها.\r\nApps folder scanned. Select the applications to install.\r\n";
         }
         catch (Exception ex) { status.Text = "خطأ في الفحص  —  Scan error"; output.Text = ex.Message; MessageBox.Show(ex.Message, "Weeshi", MessageBoxButtons.OK, MessageBoxIcon.Error); }
     }
