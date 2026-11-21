@@ -17,7 +17,7 @@ internal sealed class AppRow
     public string File;
     public string Version;
     public string Category;
-    public override string ToString() { return "[" + Category + "] " + Name + "  |  " + Version; }
+    public override string ToString() { return Name + "  |  " + Version; }
 }
 
 internal sealed class MainForm : Form
@@ -120,14 +120,13 @@ internal sealed class MainForm : Form
         install.BackColor = Color.FromArgb(36, 150, 92);
         install.FlatAppearance.BorderColor = Color.FromArgb(93, 225, 145);
 
-        appList = new CheckedListBox { Location = new Point(660, 178), Size = new Size(592, 386), CheckOnClick = true, BackColor = Color.FromArgb(14, 24, 45), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle, IntegralHeight = false, Font = new Font("Segoe UI", 10F), DrawMode = DrawMode.OwnerDrawFixed, ItemHeight = 42, AccessibleName = "applicationList" };
+        appList = new CategorizedCheckedListBox { Location = new Point(660, 178), Size = new Size(592, 386), CheckOnClick = true, BackColor = Color.FromArgb(14, 24, 45), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle, IntegralHeight = false, Font = new Font("Segoe UI", 10F), AccessibleName = "applicationList" };
         appList.ItemCheck += (s, e) => {
             if (refreshing) return;
             var row = (AppRow)appList.Items[e.Index];
             if (e.NewValue == CheckState.Checked) checkedIds.Add(row.Id); else checkedIds.Remove(row.Id);
             BeginInvoke((Action)UpdateSelectionState);
         };
-        appList.DrawItem += DrawApplicationItem;
 
         var appHeader = new Label { Text = "البرامج المتاحة  |  Available applications", AutoSize = true, Location = new Point(660, 154), ForeColor = Color.FromArgb(61, 220, 235), Font = new Font("Segoe UI Semibold", 12F) };
         search = new SearchBox { Text = "", Location = new Point(1010, 150), Size = new Size(242, 25), BackColor = Color.FromArgb(8, 14, 30), ForeColor = Color.FromArgb(150, 170, 195), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "applicationSearch" };
@@ -210,27 +209,6 @@ internal sealed class MainForm : Form
         var label = new Label { Text = title, AutoSize = true, Location = new Point(9, 87), ForeColor = Color.White, Font = new Font("Segoe UI Semibold", 10.5F), Cursor = Cursors.Hand };
         var sub = new Label { Text = subtitle, AutoSize = false, Size = new Size(270, 25), Location = new Point(9, 105), ForeColor = Color.FromArgb(180, 190, 198), Cursor = Cursors.Hand };
         card.Click += click; image.Click += click; label.Click += click; sub.Click += click; card.Controls.AddRange(new Control[] { image, label, sub }); if (toolsGrid != null) toolsGrid.Controls.Add(card); else Controls.Add(card);
-    }
-
-    private void DrawApplicationItem(object sender, DrawItemEventArgs e)
-    {
-        if (e.Index < 0 || e.Index >= appList.Items.Count) return;
-        var row = appList.Items[e.Index] as AppRow;
-        var selected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
-        var background = selected ? Color.FromArgb(24, 116, 185) : Color.FromArgb(14, 24, 45);
-        using (var brush = new SolidBrush(background)) e.Graphics.FillRectangle(brush, e.Bounds);
-        using (var line = new Pen(Color.FromArgb(27, 42, 66))) e.Graphics.DrawLine(line, e.Bounds.Left + 12, e.Bounds.Bottom - 1, e.Bounds.Right - 12, e.Bounds.Bottom - 1);
-        var check = new Rectangle(e.Bounds.Right - 28, e.Bounds.Top + 12, 17, 17);
-        using (var pen = new Pen(Color.FromArgb(112, 135, 165), 1.5F)) e.Graphics.DrawRectangle(pen, check);
-        if (appList.GetItemChecked(e.Index)) using (var brush = new SolidBrush(Color.FromArgb(38, 213, 178))) e.Graphics.FillRectangle(brush, check);
-        var statusRect = new Rectangle(e.Bounds.Left + 12, e.Bounds.Top + 11, 52, 20);
-        using (var pill = new SolidBrush(Color.FromArgb(10, 63, 67))) e.Graphics.FillRectangle(pill, statusRect);
-        using (var statusBrush = new SolidBrush(Color.FromArgb(74, 225, 194))) e.Graphics.DrawString("Silent", new Font("Consolas", 8.5F), statusBrush, e.Bounds.Left + 17, e.Bounds.Top + 14);
-        var versionText = row == null ? "" : row.Version;
-        var nameText = row == null ? Convert.ToString(appList.Items[e.Index]) : row.Name;
-        using (var nameBrush = new SolidBrush(Color.White)) e.Graphics.DrawString(nameText, new Font("Segoe UI Semibold", 10F), nameBrush, e.Bounds.Right - 205, e.Bounds.Top + 8);
-        using (var versionBrush = new SolidBrush(Color.FromArgb(157, 180, 207))) e.Graphics.DrawString(versionText, new Font("Consolas", 8.5F), versionBrush, e.Bounds.Right - 205, e.Bounds.Top + 25);
-        e.DrawFocusRectangle();
     }
 
     private Button MakeButton(string text, int x, int y, int width, EventHandler click)
@@ -371,6 +349,21 @@ internal static class Program
     private static void Main() { Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false); Application.Run(new MainForm()); }
 }
 
+
+internal sealed class CategorizedCheckedListBox : CheckedListBox
+{
+    protected override void OnDrawItem(DrawItemEventArgs e)
+    {
+        base.OnDrawItem(e);
+        if (e.Index < 0 || e.Index >= Items.Count - 1) return;
+        var current = Items[e.Index] as AppRow;
+        var next = Items[e.Index + 1] as AppRow;
+        if (current == null || next == null || current.Category == next.Category) return;
+        using (var pen = new Pen(Color.FromArgb(100, 130, 155)))
+            e.Graphics.DrawLine(pen, e.Bounds.Left + 4, e.Bounds.Bottom - 1,
+                e.Bounds.Right - 4, e.Bounds.Bottom - 1);
+    }
+}
 
 internal sealed class SearchBox : TextBox
 {
