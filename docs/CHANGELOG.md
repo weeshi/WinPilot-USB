@@ -51,6 +51,7 @@
 - إضافة Google Drive for desktop إلى manifest ومعامل `--silent` الخاص بالمثبت المتاح محليًا.
 - إضافة عنصر Google app for desktop باسم Google Search Desktop كعنصر يدوي مؤقت؛ لم يتم تضمين مثبت لأن Google لا يوفر رابطًا ثابتًا موثقًا للملف التنفيذي.
 - التحقق من SHA-256 للبرامج الجديدة القابلة للتثبيت واختبارها عبر `DryRun`.
+- إضافة Kaspersky Virus Removal Tool 20.0.10.0 إلى قائمة التثبيت/التشغيل الصامت بمعاملات `-accepteula -silent -processlevel 2 -dontencrypt` مع SHA-256 متحقق.
 
 ### إزالة عناصر غير قابلة للتثبيت الصامت
 

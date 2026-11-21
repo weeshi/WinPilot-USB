@@ -182,5 +182,13 @@
     "Type": "exe",
     "SilentArgs": "--silent",
     "SHA256": "2CB39F4B8E640944C83E7EEE34F0F886B58DF23FA4141C225714CD6646B96575"
+  },
+  {
+    "Id": "kaspersky-vrt",
+    "Name": "Kaspersky Virus Removal Tool",
+    "Pattern": "Kaspersky Virus Removal Tool *.exe",
+    "Type": "exe",
+    "SilentArgs": "-accepteula -silent -processlevel 2 -dontencrypt",
+    "SHA256": "6191CF0E0B8AD704504DDDF8D0DB20EBEA3BA9B8DF5B0BAC529DE698C9F9D0AA"
   }
 ]
