@@ -16,7 +16,8 @@ internal sealed class AppRow
     public string Type;
     public string File;
     public string Version;
-    public override string ToString() { return Name + "  |  " + Version; }
+    public string Category;
+    public override string ToString() { return "[" + Category + "] " + Name + "  |  " + Version; }
 }
 
 internal sealed class MainForm : Form
@@ -41,9 +42,14 @@ internal sealed class MainForm : Form
     private int adIndex;
     private int progressValue;
     private bool installing;
+    private TextBox search;
+    private bool refreshing;
+    private readonly HashSet<string> checkedIds = new HashSet<string>();
+    private static readonly string[] Categories = { "مكتبية", "الوسائط", "الحماية", "المتصفحات", "التواصل", "أدوات النظام", "مكونات التشغيل", "أخرى" };
 
-    public MainForm()
+    public MainForm(string baseDirectory = null)
     {
+        if (baseDirectory != null) root = baseDirectory;
         Text = "Weeshi USB Installer";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(1100, 800);
@@ -107,19 +113,25 @@ internal sealed class MainForm : Form
         adTimer.Start();
 
         selectAll = new CheckBox { Text = "تحديد الكل  |  Select all", AutoSize = true, Location = new Point(38, 175), ForeColor = Color.White, AccessibleName = "selectAll" };
-        selectAll.CheckedChanged += (s, e) => SetAllChecked(selectAll.Checked);
-        var clearTop = MakeButton("إلغاء التحديد  |  Clear", 205, 168, 135, (s, e) => { selectAll.Checked = false; SetAllChecked(false); });
+        selectAll.CheckedChanged += (s, e) => { if (!refreshing) SetAllChecked(selectAll.Checked); };
+        var clearTop = MakeButton("إلغاء التحديد  |  Clear", 205, 168, 135, (s, e) => { checkedIds.Clear(); ApplyFilter(); });
         countLabel = new Label { Text = "0 selected", AutoSize = true, Location = new Point(365, 175), ForeColor = Color.FromArgb(180, 190, 198) };
         install = MakeButton("⚡  تثبيت صامت  |  Install silently", 38, 215, 300, (s, e) => StartInstall());
         install.BackColor = Color.FromArgb(36, 150, 92);
         install.FlatAppearance.BorderColor = Color.FromArgb(93, 225, 145);
 
         appList = new CheckedListBox { Location = new Point(660, 178), Size = new Size(592, 386), CheckOnClick = true, BackColor = Color.FromArgb(14, 24, 45), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle, IntegralHeight = false, Font = new Font("Segoe UI", 10F), DrawMode = DrawMode.OwnerDrawFixed, ItemHeight = 42, AccessibleName = "applicationList" };
-        appList.ItemCheck += (s, e) => BeginInvoke((Action)(UpdateSelectionState));
+        appList.ItemCheck += (s, e) => {
+            if (refreshing) return;
+            var row = (AppRow)appList.Items[e.Index];
+            if (e.NewValue == CheckState.Checked) checkedIds.Add(row.Id); else checkedIds.Remove(row.Id);
+            BeginInvoke((Action)UpdateSelectionState);
+        };
         appList.DrawItem += DrawApplicationItem;
 
         var appHeader = new Label { Text = "البرامج المتاحة  |  Available applications", AutoSize = true, Location = new Point(660, 154), ForeColor = Color.FromArgb(61, 220, 235), Font = new Font("Segoe UI Semibold", 12F) };
-        var search = new TextBox { Text = "بحث في البرامج المتاحة...", Location = new Point(1010, 150), Size = new Size(242, 25), BackColor = Color.FromArgb(8, 14, 30), ForeColor = Color.FromArgb(150, 170, 195), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "applicationSearch" };
+        search = new SearchBox { Text = "", Location = new Point(1010, 150), Size = new Size(242, 25), BackColor = Color.FromArgb(8, 14, 30), ForeColor = Color.FromArgb(150, 170, 195), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "applicationSearch" };
+        search.TextChanged += (s, e) => ApplyFilter();
         Controls.AddRange(new Control[] { selectAll, countLabel });
         var applicationPanel = new Panel {
             BackColor = Color.Transparent, AccessibleName = "availableApplicationsPanel"
@@ -288,16 +300,57 @@ internal sealed class MainForm : Form
         {
             if (!File.Exists(ManifestPath())) throw new FileNotFoundException("Missing scripts\\local-apps.json"); if (!Directory.Exists(AppsPath())) throw new DirectoryNotFoundException("Missing Apps folder beside WinPilot-USB.exe");
             var data = new JavaScriptSerializer().DeserializeObject(File.ReadAllText(ManifestPath())) as object[]; allApps.Clear(); appList.Items.Clear();
-            if (data != null) foreach (var raw in data) { var item = raw as Dictionary<string, object>; if (item == null) continue; var row = new AppRow { Id = Value(item, "Id"), Name = Value(item, "Name"), Pattern = Value(item, "Pattern"), Type = Value(item, "Type") }; var files = Directory.GetFiles(AppsPath(), row.Pattern, SearchOption.AllDirectories); if (files.Length > 0) { row.File = files[0]; row.Version = DetectVersion(row.File); allApps.Add(row); appList.Items.Add(row, false); } }
-            selectAll.Checked = false; UpdateSelectionState(); progress.Value = 0; status.Text = ""; currentLabel.Text = ""; output.Text = "تم فحص مجلد Apps. اختر البرامج التي تريد تثبيتها.\r\nApps folder scanned. Select the applications to install.\r\n";
+            if (data != null) foreach (var raw in data) { var item = raw as Dictionary<string, object>; if (item == null) continue; var row = new AppRow { Id = Value(item, "Id"), Name = Value(item, "Name"), Pattern = Value(item, "Pattern"), Type = Value(item, "Type") }; var files = Directory.GetFiles(AppsPath(), row.Pattern, SearchOption.AllDirectories); if (files.Length > 0) { row.File = files[0]; row.Version = DetectVersion(row.File); row.Category = CategoryFor(row.Id); allApps.Add(row); } }
+            allApps.Sort((a, b) => { int c = Array.IndexOf(Categories, a.Category).CompareTo(Array.IndexOf(Categories, b.Category)); return c != 0 ? c : StringComparer.OrdinalIgnoreCase.Compare(a.Name, b.Name); });
+            ApplyFilter(); progress.Value = 0; status.Text = ""; currentLabel.Text = ""; output.Text = "تم فحص مجلد Apps. اختر البرامج التي تريد تثبيتها.\r\nApps folder scanned. Select the applications to install.\r\n";
         }
         catch (Exception ex) { status.Text = "خطأ في الفحص  —  Scan error"; output.Text = ex.Message; MessageBox.Show(ex.Message, "Weeshi", MessageBoxButtons.OK, MessageBoxIcon.Error); }
     }
     private string Value(Dictionary<string, object> item, string key) { return item.ContainsKey(key) && item[key] != null ? Convert.ToString(item[key]) : ""; }
     private string DetectVersion(string file) { try { var info = FileVersionInfo.GetVersionInfo(file); if (!string.IsNullOrWhiteSpace(info.ProductVersion)) return info.ProductVersion.Trim(); if (!string.IsNullOrWhiteSpace(info.FileVersion)) return info.FileVersion.Trim(); } catch { } var match = Regex.Match(Path.GetFileName(file), @"\d+(?:\.\d+){1,4}"); return match.Success ? match.Value : "Version unknown"; }
-    private void SetAllChecked(bool value) { if (appList == null) return; for (var i = 0; i < appList.Items.Count; i++) appList.SetItemChecked(i, value); UpdateSelectionState(); }
-    private void UpdateSelectionState() { if (appList == null || countLabel == null) return; var count = appList.CheckedItems.Count; countLabel.Text = count + " selected / محدد"; if (appList.Items.Count > 0 && count == appList.Items.Count && !selectAll.Checked) selectAll.Checked = true; if (count < appList.Items.Count && selectAll.Checked && !selectAll.Focused) selectAll.Checked = false; }
-    private List<AppRow> SelectedApps() { var result = new List<AppRow>(); foreach (var item in appList.CheckedItems) result.Add((AppRow)item); return result; }
+    private static string CategoryFor(string id)
+    {
+        switch (id) {
+            case "libreoffice": case "foxit": case "notepadpp": case "googledrive": return Categories[0];
+            case "vlc": case "gom": case "klite": return Categories[1];
+            case "360": case "kaspersky-vrt": return Categories[2];
+            case "chrome": case "firefox": case "brave": case "chromium": return Categories[3];
+            case "telegram": case "whatsapp": case "zoom": return Categories[4];
+            case "anydesk": case "crystaldiskinfo": case "poweriso": case "winrar": return Categories[5];
+            case "vcredist-x64": case "vcredist-x86": case "dotnet-desktop-x64": case "dotnet-desktop-x86": return Categories[6];
+            default: return Categories[7];
+        }
+    }
+    private void ApplyFilter()
+    {
+        if (appList == null) return;
+        string query = search == null ? "" : search.Text.Trim();
+        refreshing = true;
+        appList.BeginUpdate();
+        try {
+            appList.Items.Clear();
+            foreach (var row in allApps)
+                if ((row.Name + " " + row.Id + " " + row.Category).IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+                    appList.Items.Add(row, checkedIds.Contains(row.Id));
+        } finally { appList.EndUpdate(); refreshing = false; }
+        UpdateSelectionState();
+    }
+    private void SetAllChecked(bool value)
+    {
+        if (appList == null) return;
+        foreach (AppRow row in appList.Items)
+            if (value) checkedIds.Add(row.Id); else checkedIds.Remove(row.Id);
+        ApplyFilter();
+    }
+    private void UpdateSelectionState()
+    {
+        if (appList == null || countLabel == null) return;
+        countLabel.Text = checkedIds.Count + " محدد / selected";
+        refreshing = true;
+        selectAll.Checked = appList.Items.Count > 0 && appList.CheckedItems.Count == appList.Items.Count;
+        refreshing = false;
+    }
+    private List<AppRow> SelectedApps() { return allApps.FindAll(row => checkedIds.Contains(row.Id)); }
     private void RunDryRun() { var selected = SelectedApps(); if (selected.Count == 0) { MessageBox.Show("حدد برنامجاً واحداً على الأقل أولاً.\nPlease select at least one application.", "Weeshi", MessageBoxButtons.OK, MessageBoxIcon.Information); return; } output.Clear(); foreach (var app in selected) output.AppendText("[DRY-RUN] " + app.Name + "\r\n  File: " + Path.GetFileName(app.File) + "\r\n"); status.Text = "اكتملت المعاينة  —  Dry run complete"; }
     private void StartInstall() { if (installing) return; var selected = SelectedApps(); if (selected.Count == 0) { MessageBox.Show("حدد برنامجاً واحداً على الأقل أولاً.", "Weeshi", MessageBoxButtons.OK, MessageBoxIcon.Information); return; } if (MessageBox.Show("سيتم تثبيت " + selected.Count + " برنامجاً بالتتابع. عند الفشل ستظهر نافذة متابعة أو إلغاء.\n\nContinue?", "تأكيد التثبيت", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return; installQueue.Clear(); foreach (var app in selected) installQueue.Enqueue(app); installing = true; install.Enabled = false; selectAll.Enabled = false; appList.Enabled = false; output.Clear(); output.AppendText("بدء التثبيت الصامت بالتتابع...\r\nSilent installation queue started...\r\n"); StartNextInstall(); }
     private void StartNextInstall() { if (installQueue.Count == 0) { FinishInstall(); return; } currentApp = installQueue.Dequeue(); progressValue = 1; progress.Value = 1; currentLabel.Text = "Installing " + currentApp.Name + " (1%)"; status.Text = "جاري التثبيت  —  Installing"; output.AppendText("\r\n>>> Installing: " + currentApp.Name + "\r\n    File: " + Path.GetFileName(currentApp.File) + "\r\n"); var psi = new ProcessStartInfo { FileName = "powershell.exe", Arguments = "-NoProfile -ExecutionPolicy Bypass -File \"" + ScriptsPath() + "\" -SourcePath \"" + AppsPath() + "\" -Name \"" + currentApp.Id + "\"", WorkingDirectory = root, UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true, StandardOutputEncoding = Encoding.UTF8 }; try { currentProcess = new Process { StartInfo = psi, EnableRaisingEvents = true }; currentProcess.OutputDataReceived += ProcessOutput; currentProcess.ErrorDataReceived += ProcessError; currentProcess.Exited += ProcessExited; currentProcess.Start(); currentProcess.BeginOutputReadLine(); currentProcess.BeginErrorReadLine(); progressTimer.Start(); } catch (Exception ex) { HandleFailure("تعذر تشغيل PowerShell: " + ex.Message); } }
@@ -316,4 +369,16 @@ internal static class Program
 {
     [STAThread]
     private static void Main() { Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false); Application.Run(new MainForm()); }
+}
+
+
+internal sealed class SearchBox : TextBox
+{
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, string text);
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        SendMessage(Handle, 0x1501, IntPtr.Zero, "بحث في البرامج المتاحة...");
+    }
 }
