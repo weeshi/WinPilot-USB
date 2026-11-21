@@ -3,6 +3,7 @@ Apps/*
 bin/
 obj/
 release-local/
+release-verify/
 *.exe
 scripts/logs/
 scripts/windows-update-state.json
