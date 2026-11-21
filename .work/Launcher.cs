@@ -171,7 +171,7 @@ internal sealed class MainForm : Form
         var grid = new Panel { Location = new Point(38, 215), Size = new Size(598, 435), BackColor = Color.FromArgb(18, 30, 50), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "toolsGrid" };
         Controls.Add(grid);
         toolsGrid = grid;
-        AddImageCard(10, 10, "Office", "Microsoft Office  •  ISO", Path.Combine(root, "assets", "office-card.png"), (s, e) => OpenOfficeInstaller());
+        AddImageCard(10, 10, "Office", "Microsoft Office  •  2019–2021", Path.Combine(root, "assets", "office-card.png"), (s, e) => OpenOfficeInstaller());
         AddImageCard(303, 10, "Drivers", "تعريفات الأجهزة  •  SDI", Path.Combine(root, "assets", "drivers-card.png"), (s, e) => OpenDriverInstaller());
         AddImageCard(10, 145, "Windows Updates Stop", "إيقاف تحديثات Windows", Path.Combine(root, "assets", "windows-updates-stop-card.png"), (s, e) => DisableUpdates());
         AddImageCard(303, 145, "Windows Updates Start", "تشغيل تحديثات Windows", Path.Combine(root, "assets", "windows-updates-start-card.png"), (s, e) => EnableUpdates());
@@ -246,7 +246,12 @@ internal sealed class MainForm : Form
     }
     private void OpenOfficeInstaller()
     {
-        var file = Path.Combine(root, "Apps", "office.iso"); if (!File.Exists(file)) { MessageBox.Show("ضع ملف Office ISO في Apps\\office.iso ثم أعد المحاولة.", "Office", MessageBoxButtons.OK, MessageBoxIcon.Information); return; } StartNormalInstaller(file);
+        var file = Path.Combine(root, "Apps", "office2019-2021", "Setup.exe");
+        if (!File.Exists(file)) {
+            MessageBox.Show("لم يتم العثور على مثبت Office في:\n" + file, "Office", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+        StartNormalInstaller(file);
     }
     private void OpenDriverInstaller()
     {

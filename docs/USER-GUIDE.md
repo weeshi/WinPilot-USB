@@ -14,7 +14,7 @@
 
 ## الأدوات الإضافية
 
-لوحة الأدوات اليسرى تحتوي على بطاقة Office التي تفتح `Apps\\office.iso`، وبطاقة Drivers التي تبحث عن مثبت داخل `Apps\\SDI_RUS`، وبطاقتي `Windows Updates Stop` و`Windows Updates Start`، وبطاقة `Windows + Office Activation` التي تشغل `scripts\\MAS_AIO.cmd` بصلاحيات Administrator. كما تعرض اللوحة بيانات التواصل المحملة من `info.txt`.
+لوحة الأدوات اليسرى تحتوي على بطاقة Office التي تفتح `Apps\\office2019-2021\\Setup.exe`، وبطاقة Drivers التي تبحث عن مثبت داخل `Apps\\SDI_RUS`، وبطاقتي `Windows Updates Stop` و`Windows Updates Start`، وبطاقة `Windows + Office Activation` التي تشغل `scripts\\MAS_AIO.cmd` بصلاحيات Administrator. كما تعرض اللوحة بيانات التواصل المحملة من `info.txt`.
 
 تعطيل Windows Update عملية حساسة؛ سيطلب البرنامج كتابة `DISABLE` قبل التنفيذ. استخدم الاستعادة من السكربت عند الانتهاء.
 
