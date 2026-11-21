@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Net.Http;
+using System.Threading.Tasks;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web.Script.Serialization;
@@ -40,6 +42,10 @@ internal sealed class MainForm : Form
     private Timer adTimer;
     private PictureBox adPicture;
     private int adIndex;
+    private List<byte[]> onlineAds = new List<byte[]>();
+    private Timer adRefreshTimer;
+    private bool fetchingAds;
+    private readonly System.Threading.CancellationTokenSource adCancellation = new System.Threading.CancellationTokenSource();
     private int progressValue;
     private bool installing;
     private TextBox search;
@@ -111,6 +117,14 @@ internal sealed class MainForm : Form
         adTimer = new Timer { Interval = 3000 };
         adTimer.Tick += (s, e) => ShowNextAd();
         adTimer.Start();
+        adRefreshTimer = new Timer { Interval = 300000 };
+        adRefreshTimer.Tick += async (s, e) => await RefreshOnlineAds();
+        Shown += async (s, e) => { adRefreshTimer.Start(); await RefreshOnlineAds(); };
+        FormClosed += (s, e) => {
+            adCancellation.Cancel();
+            adRefreshTimer.Dispose(); adTimer.Dispose();
+            if (adPicture.Image != null) { adPicture.Image.Dispose(); adPicture.Image = null; }
+        };
 
         selectAll = new CheckBox { Text = "تحديد الكل  |  Select all", AutoSize = true, Location = new Point(38, 175), ForeColor = Color.White, AccessibleName = "selectAll" };
         selectAll.CheckedChanged += (s, e) => { if (!refreshing) SetAllChecked(selectAll.Checked); };
@@ -230,9 +244,43 @@ internal sealed class MainForm : Form
     {
         adFiles.Clear(); var dir = Path.Combine(root, "Ads"); if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
         foreach (var file in Directory.GetFiles(dir, "*", SearchOption.TopDirectoryOnly)) { try { using (var ms = new MemoryStream(File.ReadAllBytes(file))) using (var img = Image.FromStream(ms)) adFiles.Add(file); } catch { } }
-        if (adFiles.Count == 0) { adPicture.Image = null; adPicture.BackColor = Color.FromArgb(28, 36, 43); adPicture.Paint += (s, e) => e.Graphics.DrawString("ضع صور الإعلانات داخل مجلد Ads\r\nضع أسماء مشفّرة مثل dsa1.xxx", Font, Brushes.LightGray, new PointF(20, 35)); } else ShowNextAd();
+        adPicture.Paint += (s, e) => { if (adPicture.Image == null) e.Graphics.DrawString("ضع صور الإعلانات داخل مجلد Ads", Font, Brushes.LightGray, new PointF(20, 35)); };
+        ShowNextAd();
     }
-    private void ShowNextAd() { if (adFiles.Count == 0) return; adPicture.Image = LoadImageUnlocked(adFiles[adIndex % adFiles.Count]); adIndex++; }
+    private void ShowNextAd()
+    {
+        Image next = null;
+        int count = onlineAds.Count > 0 ? onlineAds.Count : adFiles.Count;
+        if (count > 0) {
+            adIndex %= count;
+            if (onlineAds.Count > 0) {
+                using (var stream = new MemoryStream(onlineAds[adIndex]))
+                using (var source = Image.FromStream(stream)) next = new Bitmap(source);
+            } else next = LoadImageUnlocked(adFiles[adIndex]);
+            adIndex = (adIndex + 1) % count;
+        }
+        var previous = adPicture.Image;
+        adPicture.Image = next;
+        if (previous != null) previous.Dispose();
+    }
+
+    private async Task RefreshOnlineAds()
+    {
+        if (fetchingAds || IsDisposed) return;
+        fetchingAds = true;
+        try {
+            var banners = await AdFeed.DownloadAsync(new Uri("http://ads.ly-tech.ly/ads-banners/"), adCancellation.Token);
+            if (IsDisposed || adCancellation.IsCancellationRequested) return;
+            onlineAds = banners;
+            adIndex = 0;
+            ShowNextAd();
+        } catch (Exception ex) {
+            Trace.WriteLine("Online ads: " + ex.Message);
+            if (!IsDisposed && !adCancellation.IsCancellationRequested) {
+                onlineAds.Clear(); adIndex = 0; ShowNextAd();
+            }
+        } finally { fetchingAds = false; }
+    }
 
     private string ReadContactInfo()
     {
@@ -354,6 +402,67 @@ internal static class Program
     private static void Main() { Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false); Application.Run(new MainForm()); }
 }
 
+
+internal static class AdFeed
+{
+    private const int MaxBytes = 5 * 1024 * 1024;
+    internal static Uri[] BannerUris(Uri folder)
+    {
+        if (folder == null || !folder.IsAbsoluteUri || (folder.Scheme != "http" && folder.Scheme != "https"))
+            throw new ArgumentException("The ad folder must be an absolute HTTP or HTTPS URL.", "folder");
+        var baseUri = folder.AbsoluteUri.EndsWith("/", StringComparison.Ordinal) ? folder : new Uri(folder.AbsoluteUri + "/");
+        return new[] { new Uri(baseUri, "dsa1.xxx"), new Uri(baseUri, "dsa2.xxx"), new Uri(baseUri, "dsa3.xxx") };
+    }
+
+    private static bool IsImage(byte[] bytes)
+    {
+        try {
+            using (var stream = new MemoryStream(bytes))
+            using (var image = Image.FromStream(stream, false, true)) {
+                if (image.Width > 8192 || image.Height > 8192 || (long)image.Width * image.Height > 16000000) return false;
+                using (var decoded = new Bitmap(image)) return decoded.Width > 0;
+            }
+        } catch (ArgumentException) { return false; }
+          catch (OutOfMemoryException) { return false; }
+    }
+
+    private static async Task<byte[]> ReadBytes(HttpResponseMessage response, System.Threading.CancellationToken token)
+    {
+        response.EnsureSuccessStatusCode();
+        if (response.Content.Headers.ContentLength > MaxBytes) throw new IOException("Ad response exceeds 5 MB.");
+        using (var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+        using (var buffer = new MemoryStream()) {
+            var block = new byte[8192];
+            int length;
+            while ((length = await stream.ReadAsync(block, 0, block.Length, token).ConfigureAwait(false)) > 0) {
+                if (buffer.Length + length > MaxBytes) throw new IOException("Ad response exceeds 5 MB.");
+                buffer.Write(block, 0, length);
+            }
+            return buffer.ToArray();
+        }
+    }
+
+    internal static async Task<List<byte[]>> DownloadAsync(Uri endpoint, System.Threading.CancellationToken cancellation)
+    {
+        using (var timeout = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(cancellation))
+        using (var client = new HttpClient()) {
+            timeout.CancelAfter(TimeSpan.FromSeconds(30));
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("WinPilot-USB/1.0");
+            var result = new List<byte[]>();
+            foreach (var bannerUri in BannerUris(endpoint)) {
+                timeout.Token.ThrowIfCancellationRequested();
+                try {
+                    using (var response = await client.GetAsync(bannerUri, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false)) {
+                        var bytes = await ReadBytes(response, timeout.Token).ConfigureAwait(false);
+                        if (IsImage(bytes)) result.Add(bytes);
+                    }
+                } catch (HttpRequestException ex) { Trace.WriteLine("Ad image: " + ex.Message); }
+                  catch (IOException ex) { Trace.WriteLine("Ad image: " + ex.Message); }
+                }
+            return result;
+        }
+    }
+}
 
 internal sealed class CategorizedCheckedListBox : CheckedListBox
 {
