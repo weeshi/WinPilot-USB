@@ -204,7 +204,7 @@ internal sealed class MainForm : Form
 
     private Button MakeContactButton(string imagePath, string target, string name, int x)
     {
-        var button = new Button { Location = new Point(x, 63), Size = new Size(48, 48), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(16, 29, 50), ForeColor = Color.White, Image = LoadImageUnlocked(imagePath), ImageAlign = ContentAlignment.MiddleCenter, AccessibleName = name, Cursor = Cursors.Hand, TabStop = true };
+        var button = new Button { Location = new Point(x, 63), Size = new Size(48, 48), FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(16, 29, 50), ForeColor = Color.White, BackgroundImage = LoadImageUnlocked(imagePath), BackgroundImageLayout = ImageLayout.Zoom, AccessibleName = name, Cursor = Cursors.Hand, TabStop = true };
         button.FlatAppearance.BorderSize = 0;
         button.Click += (s, e) => OpenContactTarget(target, name);
         return button;
