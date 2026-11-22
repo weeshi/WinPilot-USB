@@ -35,6 +35,7 @@
 - `docs/USER-GUIDE.md`: دليل الاستخدام.
 - `docs/CHANGELOG.md`: سجل الإصدارات والتغييرات.
 - `docs/UPDATE-GUIDE.md`: طريقة تحديث الحزمة.
+- `docs/update-guide/index.html`: دليل ويب تفاعلي ومرئي لإنشاء التحديث ونشره والتحقق منه.
 - `docs/PROJECT-STATUS.md`: سجل شامل للتعديلات والمزايا وحالة كل ميزة.
 - `docs/SECURITY-AND-RELEASE.md`: الأمن والبناء والإصدار والتوقيع.
 - `docs/VERSION.txt`: معلومات الإصدار الحالية.

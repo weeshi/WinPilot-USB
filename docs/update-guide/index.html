@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07111f">
+  <meta name="description" content="دليل إنشاء واختبار ونشر تحديثات WinPilot-USB.">
+  <title>دليل إصدار WinPilot-USB</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">انتقل إلى المحتوى</a>
+  <div class="ambient a1" aria-hidden="true"></div><div class="ambient a2" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="بداية الدليل">
+      <span class="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 5h16a3 3 0 0 1 3 3v16a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3Z"/><path d="m11 16 3 3 7-7"/></svg></span>
+      <span><b>WinPilot-USB</b><small>دليل الإصدار والتحديث</small></span>
+    </a>
+    <nav class="top-actions" aria-label="روابط سريعة">
+      <button class="icon-button" id="themeToggle" type="button" aria-label="تبديل المظهر"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.4 0-.8-.1-1.2A7 7 0 0 1 12 3Z"/></svg></button>
+      <a class="quiet-link" href="../UPDATE-GUIDE.md">Markdown</a>
+      <a class="primary-link" href="https://github.com/weeshi/WinPilot-USB/releases" target="_blank" rel="noopener">صفحة الإصدارات</a>
+    </nav>
+  </header>
+
+  <div class="page-shell" id="top">
+    <aside class="sidebar" aria-label="فهرس الدليل">
+      <div class="sidebar-head"><span class="eyebrow">خريطة الدليل</span><strong>من التعديل إلى المستخدم</strong></div>
+      <label class="search-box"><span class="sr-only">بحث</span><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg><input id="guideSearch" type="search" placeholder="ابحث في الخطوات..."></label>
+      <nav class="section-nav" id="sectionNav">
+        <a href="#overview"><span>01</span>كيف يعمل التحديث</a>
+        <a href="#versioning"><span>02</span>رقم الإصدار</a>
+        <a href="#prepare"><span>03</span>تجهيز التعديلات</a>
+        <a href="#build"><span>04</span>البناء والاختبار</a>
+        <a href="#applications"><span>05</span>البرامج الجديدة</a>
+        <a href="#publish"><span>06</span>النشر وGitHub</a>
+        <a href="#verify"><span>07</span>التحقق النهائي</a>
+        <a href="#rollback"><span>08</span>التراجع</a>
+        <a href="#checklist"><span>09</span>قائمة التحقق</a>
+      </nav>
+      <div class="sidebar-status"><div><span>الإصدار الأساسي</span><b>V1.1.0+</b></div><div><span>المصدر</span><b>GitHub Releases</b></div><div><span>التحقق</span><b>SHA-256</b></div></div>
+    </aside>
+
+    <main id="main">
+      <section class="hero searchable" id="overview" data-search="كيف يعمل التحديث github release sha256 updater">
+        <div class="hero-copy">
+          <span class="eyebrow">دليل التشغيل الرسمي · V1.1 وما بعده</span>
+          <h1>انشر تحديثًا جديدًا<br><em>بمسار يمكن التحقق منه.</em></h1>
+          <p>من تعديل الكود إلى Release منشور، ثم اختبار أن النسخة القديمة اكتشفته ونزّلته واستبدلت ملفاتها دون المساس ببرامج المستخدم.</p>
+          <div class="hero-actions"><a class="primary-link large" href="#versioning">ابدأ إعداد الإصدار</a><button class="quiet-link large" id="printGuide" type="button">طباعة الدليل</button></div>
+          <div class="hero-note"><svg viewBox="0 0 24 24"><path d="M12 3 3.5 7v5c0 5 3.6 8.2 8.5 9 4.9-.8 8.5-4 8.5-9V7L12 3Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg><span><b>قاعدة الإصدار:</b> لا يصل ZIP إلى المستخدم قبل مطابقة بصمته المنشورة.</span></div>
+        </div>
+        <div class="release-visual" aria-label="مخطط رحلة التحديث">
+          <div class="visual-grid"></div><div class="visual-title"><span>RELEASE CHANNEL</span><b>مسار التحديث الحي</b></div>
+          <ol class="release-rail">
+            <li class="done"><i>1</i><div><b>Build</b><span>EXE + Updater</span></div></li>
+            <li class="done"><i>2</i><div><b>Package</b><span>ZIP + SHA-256</span></div></li>
+            <li class="live"><i>3</i><div><b>Release</b><span>GitHub Latest</span></div></li>
+            <li><i>4</i><div><b>Detect</b><span>Version compare</span></div></li>
+            <li><i>5</i><div><b>Apply</b><span>Backup + restart</span></div></li>
+          </ol>
+          <div class="packet"><span></span><span></span><span></span></div><div class="visual-footer"><code>vMAJOR.MINOR.PATCH</code><span>HTTPS only</span></div>
+        </div>
+      </section>
+
+      <section class="content-section searchable" id="versioning" data-search="رقم الإصدار semantic version major minor patch manifest csproj">
+        <div class="section-heading"><span class="step-index">02</span><div><span class="eyebrow">القرار الأول</span><h2>اختر رقم الإصدار ووحّده</h2></div><p>يجب أن يكون الرقم الجديد أكبر، وأن يظهر بالقيمة نفسها في المشروعين والـ manifests والوثائق.</p></div>
+        <div class="version-lab panel">
+          <div class="version-controls">
+            <label>الإصدار الجديد<input id="versionInput" type="text" inputmode="decimal" value="1.1.1"></label>
+            <div class="version-kinds"><button type="button" data-bump="patch"><b>PATCH</b><span>إصلاح</span></button><button type="button" data-bump="minor"><b>MINOR</b><span>ميزة</span></button><button type="button" data-bump="major"><b>MAJOR</b><span>تغيير جذري</span></button></div>
+          </div>
+          <div class="generated-release"><span>سيُستخدم في</span><strong id="versionTag">v1.1.1</strong><div class="file-map"><span>ملفا csproj</span><code id="assemblyVersion">1.1.1.0</code><span>ملفا manifest</span><code>نفس القيمة</code><span>VERSION.txt</span><code id="displayVersion">1.1.1</code></div></div>
+        </div>
+        <div class="callout warning"><b>لا تعِد استخدام رقم منشور.</b><span>إذا كان الإصدار السابق معيبًا، أصلحه في PATCH جديد بدل تحريك tag قديم.</span></div>
+      </section>
+
+      <section class="content-section searchable" id="prepare" data-search="git status diff changelog ملفات التطوير">
+        <div class="section-heading"><span class="step-index">03</span><div><span class="eyebrow">قبل البناء</span><h2>نظّف نطاق الإصدار</h2></div><p>راجع ما تغيّر، اكتب ملاحظات الإصدار، ولا تخلط ملفات المستخدم أو مخرجات البناء مع المصدر.</p></div>
+        <div class="two-column">
+          <article class="panel command-panel"><div class="panel-head"><b>مراجعة Git</b><button class="copy-button" data-copy-target="prepareCode">نسخ</button></div><pre id="prepareCode"><code>git status --short
+git diff --check
+git diff</code></pre></article>
+          <article class="panel file-policy"><h3>لا تدخل في حزمة USB</h3><div class="chip-list"><span>.git</span><span>.github</span><span>.work</span><span>bin</span><span>obj</span><span>release-local</span></div><p>هذه ملفات تطوير. الحزمة التشغيلية تحتاج التطبيق والمحدث والسكربتات والأصول فقط.</p></article>
+        </div>
+      </section>
+
+      <section class="content-section searchable" id="build" data-search="build test updater search package hash اختبار">
+        <div class="section-heading"><span class="step-index">04</span><div><span class="eyebrow">بوابة الجودة</span><h2>ابنِ، اختبر، ثم أنشئ الحزمة</h2></div><p>نجاح GitHub Actions لا يعوض اختبار الواجهة والمحدث على Windows.</p></div>
+        <div class="timeline">
+          <article><span class="timeline-mark">A</span><div><h3>البناء النظيف</h3><p>ينتج التطبيق والمحدث في جذر المشروع.</p><div class="code-wrap"><button class="copy-button" data-copy-target="buildCode">نسخ</button><pre id="buildCode"><code>.\scripts\Build-WinPilot.ps1 -Clean</code></pre></div></div></article>
+          <article><span class="timeline-mark">B</span><div><h3>الاختبارات</h3><p>الاستبدال، الحفظ، rollback، الحماية، البحث والتصنيف.</p><div class="code-wrap"><button class="copy-button" data-copy-target="testCode">نسخ</button><pre id="testCode"><code>powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Test-Updater.ps1
+
+&amp; "$env:WINDIR\SysWOW64\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -STA -ExecutionPolicy Bypass -File .\scripts\Test-Search.ps1</code></pre></div></div></article>
+          <article><span class="timeline-mark">C</span><div><h3>حزمة محلية</h3><p>أنشئ ZIP والبصمة قبل النشر.</p><div class="code-wrap"><button class="copy-button" data-copy-target="packageCode">نسخ</button><pre id="packageCode"><code>.\scripts\New-UpdatePackage.ps1</code></pre></div></div></article>
+        </div>
+        <div class="artifact-strip"><div><b>WinPilot-USB.exe</b><small>التطبيق الرئيسي</small></div><div><b>WinPilot-Updater.exe</b><small>عامل الاستبدال</small></div><div><b>Update.zip</b><small>الحزمة المنشورة</small></div></div>
+      </section>
+
+      <section class="content-section searchable" id="applications" data-search="إضافة برنامج appids installer silent sha256 manifest">
+        <div class="section-heading"><span class="step-index">05</span><div><span class="eyebrow">مسار اختياري</span><h2>أضف البرامج دون إعادة توزيع كل Apps</h2></div><p>اختر المثبتات الجديدة فقط باستخدام Id. تبقى ملفات المستخدم الحالية كما هي.</p></div>
+        <div class="apps-layout">
+          <div class="manifest-card panel"><div class="manifest-title"><span>local-apps.json</span><b>تعريف البرنامج</b></div><pre><code>{
+  "Id": "new-program-id",
+  "Name": "Program name",
+  "Pattern": "Program-Offline.exe",
+  "Type": "exe",
+  "SilentArgs": "/S",
+  "SHA256": "..."
+}</code></pre></div>
+          <div class="apps-steps"><ol><li><b>ضع المثبت</b><span>داخل Apps باسم ثابت.</span></li><li><b>سجّل SHA-256</b><span>حدّث manifest.</span></li><li><b>اختبر الصامت</b><span>على جهاز منفصل.</span></li><li><b>أنشئ الحزمة</b><span>مرّر Id إلى AppIds.</span></li></ol><div class="code-wrap"><button class="copy-button" data-copy-target="appsCode">نسخ</button><pre id="appsCode"><code>.\scripts\New-UpdatePackage.ps1 -AppIds "program-one","program-two"</code></pre></div></div>
+        </div>
+        <div class="callout"><b>تحديث برنامج موجود</b><span>استخدم اسم ملف ثابت ليستبدله المحدث، أو اجعل Pattern يطابق الملف الجديد وحده.</span></div>
+      </section>
+
+      <section class="content-section searchable" id="publish" data-search="نشر commit push tag github actions release upload clobber">
+        <div class="section-heading"><span class="step-index">06</span><div><span class="eyebrow">إلى القناة العامة</span><h2>ارفع المصدر وأنشئ Release</h2></div><p>الـ tag هو مفتاح Workflow. أنشئه فقط بعد نجاح الاختبارات.</p></div>
+        <div class="publish-grid">
+          <article class="panel publish-card"><span>1 · SOURCE</span><h3>Commit وPush</h3><div class="code-wrap"><button class="copy-button" data-copy-target="commitCode">نسخ</button><pre id="commitCode"><code>git add &lt;الملفات-المعدلة&gt;
+git commit -m "Release V1.1.1"
+git push origin master</code></pre></div></article>
+          <article class="panel publish-card accent-card"><span>2 · TRIGGER</span><h3>Tag الإصدار</h3><div class="code-wrap"><button class="copy-button" data-copy-target="tagCode">نسخ</button><pre id="tagCode"><code>git tag -a v1.1.1 -m "WinPilot USB V1.1.1"
+git push origin v1.1.1</code></pre></div></article>
+          <article class="panel publish-card"><span>3 · OBSERVE</span><h3>راقب Workflow</h3><div class="code-wrap"><button class="copy-button" data-copy-target="watchCode">نسخ</button><pre id="watchCode"><code>gh run list --repo weeshi/WinPilot-USB --workflow release.yml --limit 5
+gh run watch RUN_ID --repo weeshi/WinPilot-USB --exit-status</code></pre></div></article>
+        </div>
+        <div class="release-files panel"><div class="release-files-head"><div><span class="eyebrow">عقد الإصدار</span><h3>خمسة أسماء لا تتغير</h3></div><span>Required assets</span></div><ul><li><code>WinPilot-USB.exe</code><span>تنزيل يدوي</span></li><li><code>WinPilot-Updater.exe</code><span>ترقية V1.0</span></li><li class="critical"><code>WinPilot-USB-Update.zip</code><span>الحزمة</span></li><li class="critical"><code>WinPilot-USB-Update.sha256</code><span>البصمة</span></li><li><code>SHA256SUMS.txt</code><span>السجل</span></li></ul></div>
+        <details class="advanced-panel"><summary><span>استبدال ZIP الآلي بحزمة تحتوي برامج</span><small>أمر متقدم</small></summary><div class="details-body"><p>افحص الحزمة أولًا؛ <code>--clobber</code> يحذف الأصل القديم قبل رفع البديل.</p><div class="code-wrap"><button class="copy-button" data-copy-target="clobberCode">نسخ</button><pre id="clobberCode"><code>gh release upload v1.1.1 .\release-local\WinPilot-USB-Update.zip .\release-local\WinPilot-USB-Update.sha256 --repo weeshi/WinPilot-USB --clobber</code></pre></div></div></details>
+      </section>
+
+      <section class="content-section searchable" id="verify" data-search="التحقق assets download sha256 usb إصدار قديم">
+        <div class="section-heading"><span class="step-index">07</span><div><span class="eyebrow">قبل الإعلان</span><h2>تحقق مما نُشر، لا مما بنيته فقط</h2></div><p>نزّل أصل Release وقارن بصمته، ثم اختبر التحديث من نسخة أقدم على USB تجريبي.</p></div>
+        <div class="verification-board">
+          <div class="verify-command panel"><div class="panel-head"><b>فحص الأصول</b><button class="copy-button" data-copy-target="verifyCode">نسخ</button></div><pre id="verifyCode"><code>gh release view v1.1.1 --repo weeshi/WinPilot-USB --json url,tagName,isDraft,isPrerelease,assets</code></pre></div>
+          <div class="verify-states"><div class="state ok"><i></i><span><b>Build</b><small>نجح</small></span></div><div class="state ok"><i></i><span><b>Assets</b><small>خمسة ملفات</small></span></div><div class="state ok"><i></i><span><b>Digest</b><small>مطابق</small></span></div><div class="state pending"><i></i><span><b>Rollout</b><small>USB تجريبي</small></span></div></div>
+        </div>
+        <div class="device-test panel"><div class="device-illustration"><svg viewBox="0 0 220 150"><rect x="34" y="18" width="150" height="100" rx="8"/><path d="M18 126h184l-12 12H30Z"/><rect x="48" y="34" width="122" height="66" rx="3"/><path d="M62 55h54m-54 15h92m-92 15h70"/><circle cx="155" cy="53" r="11"/><path d="m150 53 4 4 7-8"/></svg></div><div><span class="eyebrow">اختبار المستخدم</span><h3>ابدأ من الإصدار السابق</h3><ol><li>شغّل نسخة أقدم.</li><li>اضغط Check updates.</li><li>نزّل ووافق على إعادة التشغيل.</li><li>تحقق من الرقم الجديد.</li><li>تأكد من Apps وAds وinfo.txt.</li></ol></div></div>
+      </section>
+
+      <section class="content-section searchable" id="rollback" data-search="تراجع إصدار معيب patch latest">
+        <div class="section-heading"><span class="step-index">08</span><div><span class="eyebrow">إذا ظهرت مشكلة</span><h2>صحّح إلى الأمام</h2></div><p>لا تحرك tag منشورًا. أنشئ PATCH جديدًا واجعله Latest.</p></div>
+        <div class="rollback-map"><div class="release-node bad"><span>v1.1.1</span><b>مشكلة</b></div><div class="rollback-line"><span>إصلاح + اختبار</span></div><div class="release-node good"><span>v1.1.2</span><b>Latest</b></div></div>
+        <div class="callout danger"><b>حذف Release ليس تراجعًا للأجهزة.</b><span>الأجهزة التي ثبّتته لن تعود تلقائيًا؛ انشر إصدارًا تصحيحيًا أعلى.</span></div>
+      </section>
+
+      <section class="content-section searchable" id="checklist" data-search="قائمة تحقق قبل النشر">
+        <div class="section-heading"><span class="step-index">09</span><div><span class="eyebrow">بوابة النشر</span><h2>لا تنشر قبل اكتمال القائمة</h2></div><p>تُحفظ العلامات في هذا المتصفح. أعد ضبطها عند بدء إصدار جديد.</p></div>
+        <div class="checklist-panel panel">
+          <div class="checklist-progress"><div><span id="checkCount">0 من 13</span><b>جاهزية الإصدار</b></div><div class="progress-track"><span id="checkProgress"></span></div><button id="resetChecklist" type="button">إعادة الضبط</button></div>
+          <div class="checklist-grid" id="releaseChecklist">
+            <label><input type="checkbox"><span>رقم الإصدار موحّد</span></label><label><input type="checkbox"><span>CHANGELOG مكتمل</span></label><label><input type="checkbox"><span>البناء بلا تحذيرات</span></label><label><input type="checkbox"><span>Test-Updater ناجح</span></label><label><input type="checkbox"><span>Test-Search ناجح</span></label><label><input type="checkbox"><span>الواجهة مفحوصة</span></label><label><input type="checkbox"><span>SHA-256 محدث</span></label><label><input type="checkbox"><span>التثبيت الصامت مختبر</span></label><label><input type="checkbox"><span>حقوق التوزيع مؤكدة</span></label><label><input type="checkbox"><span>Git نظيف</span></label><label><input type="checkbox"><span>Actions ناجح</span></label><label><input type="checkbox"><span>بصمة ZIP مطابقة</span></label><label><input type="checkbox"><span>اختبار USB ناجح</span></label>
+          </div>
+        </div>
+      </section>
+
+      <section class="references">
+        <div><span class="eyebrow">مصادر رسمية</span><h2>روابط يجب أن تبقى قريبة</h2></div>
+        <div class="reference-links"><a href="https://github.com/weeshi/WinPilot-USB" target="_blank"><b>المستودع</b><span>المصدر وWorkflow</span></a><a href="https://github.com/weeshi/WinPilot-USB/releases" target="_blank"><b>Releases</b><span>الحزم المنشورة</span></a><a href="https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases" target="_blank"><b>GitHub Docs</b><span>حدود Release</span></a><a href="https://cli.github.com/manual/gh_release_upload" target="_blank"><b>GitHub CLI</b><span>Upload وClobber</span></a></div>
+      </section>
+      <footer><div><b>WinPilot-USB</b><span>صفحة محلية تعمل دون اتصال؛ تحتاج GitHub عند النشر فقط.</span></div><a href="#top">العودة إلى البداية</a></footer>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite">تم النسخ</div>
+  <script src="./app.js"></script>
+</body>
+</html>
