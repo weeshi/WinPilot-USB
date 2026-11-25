@@ -4,7 +4,7 @@
 
 ## الحالة الحالية
 
-- الإصدار البرمجي: `1.1.0.0`
+- الإصدار البرمجي: `1.2.0.0`
 - البنية: Windows x86/32-bit، وتعمل على Windows 10 وWindows 11 عبر WoW64.
 - المصدر المفتوح: [GitHub](https://github.com/weeshi/WinPilot-USB)
 - التوقيع الرقمي: مجهز في Workflow، لكنه ينتظر قبول SignPath Foundation.

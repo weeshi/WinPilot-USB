@@ -3,7 +3,7 @@ name: Build, hash, release and sign
 on:
   workflow_dispatch:
   push:
-    tags: ['v*.*.*']
+    tags: ['v*.*.*.*']
 
 permissions:
   contents: write

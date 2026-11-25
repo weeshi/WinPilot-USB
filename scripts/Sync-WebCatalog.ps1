@@ -14,8 +14,8 @@ $manifestPaths = @(
 
 [xml]$props = Get-Content -LiteralPath $propsPath -Raw
 $version = [string]$props.Project.PropertyGroup.WinPilotProductVersion
-if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Invalid WinPilotProductVersion in Directory.Build.props: $version" }
-$fileVersion = "$version.0"
+if ($version -notmatch '^\d+\.\d+\.\d+\.\d+$') { throw "Invalid four-part WinPilotProductVersion in Directory.Build.props: $version" }
+$fileVersion = $version
 
 $categoryOrder = [ordered]@{
     office = @('foxit','googledrive','libreoffice','notepadpp')

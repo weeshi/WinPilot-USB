@@ -10,6 +10,7 @@
 |---|---|---|---|---|
 | Search | `web-app/app.js` | هذا العقد | local catalog | query, clear, no-results |
 | Selection | `web-app/app.js` | هذا العقد | visible-results only | count and select-all state |
+| Selection handoff | `WinPilot-Selection.json` | `AGENTS.md` and this contract | file or winpilot URI | schema, size and known-ID checks |
 | Toast | `#toast` | هذا العقد | info only | live-region browser check |
 | Dialog | `#dialogBackdrop` | هذا العقد | restricted Windows action | Escape, trap, restore focus |
 | Scrollbar | `web-app/styles.css` | `DESIGN.md` | list and dialog geometry | computed style |

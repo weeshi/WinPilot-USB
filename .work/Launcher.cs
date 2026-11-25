@@ -56,11 +56,13 @@ internal sealed class MainForm : Form
     private TextBox search;
     private bool refreshing;
     private readonly HashSet<string> checkedIds = new HashSet<string>();
+    private string pendingSelectionArgument;
     private static readonly string[] Categories = { "مكتبية", "الوسائط", "الحماية", "المتصفحات", "التواصل", "أدوات النظام", "مكونات التشغيل", "أخرى" };
 
-    public MainForm(string baseDirectory = null)
+    public MainForm(string baseDirectory = null, string selectionArgument = null)
     {
         if (baseDirectory != null) root = baseDirectory;
+        pendingSelectionArgument = selectionArgument;
         Text = "Weeshi USB Installer";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(1100, 800);
@@ -140,6 +142,7 @@ internal sealed class MainForm : Form
         selectAll.CheckedChanged += (s, e) => { if (!refreshing) SetAllChecked(selectAll.Checked); };
         var clearTop = MakeButton("إلغاء التحديد  |  Clear", 205, 168, 135, (s, e) => { checkedIds.Clear(); ApplyFilter(); });
         countLabel = new Label { Text = "0 selected", AutoSize = true, Location = new Point(365, 175), ForeColor = Color.FromArgb(180, 190, 198) };
+        var importSelection = MakeButton("استيراد اختيار  |  Import", 500, 168, 136, (s, e) => ImportSelectionFromDialog());
         install = MakeButton("⚡  تثبيت صامت  |  Install silently", 38, 207, 598, (s, e) => StartInstall());
         install.BackColor = Color.FromArgb(36, 150, 92);
         install.FlatAppearance.BorderColor = Color.FromArgb(93, 225, 145);
@@ -178,7 +181,7 @@ internal sealed class MainForm : Form
         header.SizeChanged += (s, e) => alignApplications();
         BuildToolCards();
 
-        Controls.AddRange(new Control[] { clearTop, install });
+        Controls.AddRange(new Control[] { clearTop, importSelection, install });
 
         progress = new ProgressBar { Location = new Point(38, 715), Size = new Size(1214, 14), Minimum = 0, Maximum = 100, Style = ProgressBarStyle.Continuous, AccessibleName = "installProgress" };
         output = new RichTextBox { Location = new Point(38, 737), Size = new Size(1214, 35), ReadOnly = true, BackColor = Color.FromArgb(6, 11, 22), ForeColor = Color.FromArgb(198, 231, 230), Font = new Font("Consolas", 9F), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "installLog", Text = "[READY]  حدد البرامج التي تريد تثبيتها ثم اضغط تثبيت صامت.\r\n" };
@@ -438,7 +441,14 @@ internal sealed class MainForm : Form
     {
         status.Text = "جاري فحص البرامج  —  Scanning";
         install.Enabled = false;
-        try { BindApps(await Task.Run(() => ScanApps())); }
+        try {
+            BindApps(await Task.Run(() => ScanApps()));
+            if (!string.IsNullOrWhiteSpace(pendingSelectionArgument)) {
+                var selection = pendingSelectionArgument;
+                pendingSelectionArgument = null;
+                ImportSelection(selection, true);
+            }
+        }
         catch (Exception ex) { ShowScanError(ex); }
         finally { install.Enabled = true; }
     }
@@ -486,6 +496,77 @@ internal sealed class MainForm : Form
         selectAll.Checked = appList.Items.Count > 0 && appList.CheckedItems.Count == appList.Items.Count;
         refreshing = false;
     }
+    private void ImportSelectionFromDialog()
+    {
+        using (var dialog = new OpenFileDialog {
+            Title = "استيراد اختيارات WinPilot",
+            Filter = "WinPilot Selection (*.json)|*.json|JSON files (*.json)|*.json",
+            CheckFileExists = true,
+            Multiselect = false
+        }) {
+            if (dialog.ShowDialog(this) == DialogResult.OK) ImportSelection(dialog.FileName, true);
+        }
+    }
+    private List<string> ReadSelectionIds(string source, out string sourceVersion)
+    {
+        sourceVersion = "";
+        var ids = new List<string>();
+        if (source.StartsWith("winpilot://", StringComparison.OrdinalIgnoreCase)) {
+            var uri = new Uri(source);
+            var query = uri.Query.TrimStart('?').Split('&');
+            foreach (var part in query) {
+                var pair = part.Split(new[] { '=' }, 2);
+                if (pair.Length != 2) continue;
+                var key = Uri.UnescapeDataString(pair[0]);
+                var value = Uri.UnescapeDataString(pair[1]);
+                if (key.Equals("version", StringComparison.OrdinalIgnoreCase)) sourceVersion = value;
+                if (key.Equals("apps", StringComparison.OrdinalIgnoreCase))
+                    foreach (var id in value.Split(',')) if (!string.IsNullOrWhiteSpace(id)) ids.Add(id.Trim());
+            }
+            return ids;
+        }
+        var info = new FileInfo(source);
+        if (!info.Exists) throw new FileNotFoundException("Selection file was not found.", source);
+        if (info.Length > 1024 * 1024) throw new InvalidDataException("Selection file is larger than 1 MB.");
+        var data = new JavaScriptSerializer().DeserializeObject(File.ReadAllText(source)) as Dictionary<string, object>;
+        if (data == null || !data.ContainsKey("schemaVersion") || Convert.ToInt32(data["schemaVersion"]) != 1)
+            throw new InvalidDataException("Unsupported WinPilot selection schema.");
+        sourceVersion = Value(data, "productVersion");
+        object rawApps;
+        if (!data.TryGetValue("apps", out rawApps)) throw new InvalidDataException("Selection file has no apps list.");
+        var array = rawApps as object[];
+        if (array == null) throw new InvalidDataException("Selection apps value must be an array.");
+        foreach (var value in array) {
+            var id = Convert.ToString(value);
+            if (!string.IsNullOrWhiteSpace(id)) ids.Add(id.Trim());
+        }
+        return ids;
+    }
+    private void ImportSelection(string source, bool showResult)
+    {
+        try {
+            string sourceVersion;
+            var requested = ReadSelectionIds(source, out sourceVersion);
+            var unique = new HashSet<string>(requested, StringComparer.OrdinalIgnoreCase);
+            var available = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var app in allApps) available.Add(app.Id);
+            checkedIds.Clear();
+            var unavailable = new List<string>();
+            foreach (var id in unique) {
+                if (available.Contains(id)) checkedIds.Add(id); else unavailable.Add(id);
+            }
+            ApplyFilter();
+            status.Text = "تم استيراد " + checkedIds.Count + " اختيار  —  Selection imported";
+            output.AppendText("\r\n[SELECTION] Imported " + checkedIds.Count + " application(s) from " + (sourceVersion == "" ? "unknown version" : "V" + sourceVersion) + ".\r\n");
+            if (showResult) {
+                var message = "تم تحديد " + checkedIds.Count + " برنامج متاح.";
+                if (unavailable.Count > 0) message += "\r\n\r\nغير متاح على هذا الجهاز/USB:\r\n" + string.Join(", ", unavailable);
+                MessageBox.Show(message, "WinPilot Selection", MessageBoxButtons.OK, unavailable.Count > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
+            }
+        } catch (Exception ex) {
+            MessageBox.Show("تعذر استيراد ملف الاختيارات.\r\n\r\n" + ex.Message, "WinPilot Selection", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
     private List<AppRow> SelectedApps() { return allApps.FindAll(row => checkedIds.Contains(row.Id)); }
     private void RunDryRun() { var selected = SelectedApps(); if (selected.Count == 0) { MessageBox.Show("حدد برنامجاً واحداً على الأقل أولاً.\nPlease select at least one application.", "Weeshi", MessageBoxButtons.OK, MessageBoxIcon.Information); return; } output.Clear(); foreach (var app in selected) output.AppendText("[DRY-RUN] " + app.Name + "\r\n  File: " + Path.GetFileName(app.File) + "\r\n"); status.Text = "اكتملت المعاينة  —  Dry run complete"; }
     private void StartInstall() { if (installing) return; var selected = SelectedApps(); if (selected.Count == 0) { MessageBox.Show("حدد برنامجاً واحداً على الأقل أولاً.", "Weeshi", MessageBoxButtons.OK, MessageBoxIcon.Information); return; } if (MessageBox.Show("سيتم تثبيت " + selected.Count + " برنامجاً بالتتابع. عند الفشل ستظهر نافذة متابعة أو إلغاء.\n\nContinue?", "تأكيد التثبيت", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return; installQueue.Clear(); foreach (var app in selected) installQueue.Enqueue(app); installing = true; install.Enabled = false; selectAll.Enabled = false; appList.Enabled = false; output.Clear(); output.AppendText("بدء التثبيت الصامت بالتتابع...\r\nSilent installation queue started...\r\n"); StartNextInstall(); }
@@ -504,7 +585,7 @@ internal sealed class MainForm : Form
 internal static class Program
 {
     [STAThread]
-    private static void Main() { Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false); Application.Run(new MainForm()); }
+    private static void Main(string[] args) { Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false); Application.Run(new MainForm(null, args != null && args.Length > 0 ? args[0] : null)); }
 }
 
 

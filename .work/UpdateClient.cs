@@ -26,7 +26,7 @@ internal static class UpdateClient
     private const string HashName = "WinPilot-USB-Update.sha256";
 
     internal static Version CurrentVersion { get { return Assembly.GetExecutingAssembly().GetName().Version; } }
-    internal static string CurrentVersionText { get { var v = CurrentVersion; return v.Major + "." + v.Minor + "." + v.Build; } }
+    internal static string CurrentVersionText { get { var v = CurrentVersion; return v.Major + "." + v.Minor + "." + v.Build + "." + v.Revision; } }
 
     private static HttpClient CreateClient()
     {
