@@ -29,26 +29,19 @@
 
 لا تعِد استخدام tag أو رقم إصدار سبق نشره. التطبيق يعتمد على ترتيب الأرقام، وليس تاريخ النشر فقط.
 
-حدّث الرقم نفسه في الملفات التالية:
-
-1. `WinPilot-USB.csproj`: خصائص `Version` و`FileVersion` و`InformationalVersion`.
-2. `WinPilot-Updater.csproj`: الخصائص نفسها.
-3. `.work/app.manifest`: قيمة `assemblyIdentity version` بأربعة أجزاء.
-4. `.work/updater.manifest`: قيمة `assemblyIdentity version` بأربعة أجزاء.
-5. `docs/VERSION.txt`: الرقم وتاريخ الإصدار.
+حدّث الرقم مرة واحدة في `Directory.Build.props` داخل الخاصية `WinPilotProductVersion`. يستخدمه مشروعا Windows، ويولّد سكربت المزامنة منه إصدار الويب وملفي manifest و`docs/VERSION.txt`.
 
 مثال للإصدار `1.1.1`:
 
 ```xml
-<Version>1.1.1.0</Version>
-<FileVersion>1.1.1.0</FileVersion>
-<InformationalVersion>1.1.1</InformationalVersion>
+<WinPilotProductVersion>1.1.1</WinPilotProductVersion>
 ```
 
-وفي manifest:
+بعد تعديل الرقم أو `scripts/local-apps.json` شغّل:
 
-```xml
-<assemblyIdentity version="1.1.1.0" name="WinPilotUSB.Installer" />
+```powershell
+.\scripts\Sync-WebCatalog.ps1
+.\scripts\Sync-WebCatalog.ps1 -Verify
 ```
 
 أضف قسمًا جديدًا في أعلى `docs/CHANGELOG.md` يشرح الإصلاحات والمزايا بلغة المستخدم.

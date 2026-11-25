@@ -2,6 +2,12 @@
 
 نسخة ويب متجاوبة تحاكي واجهة تطبيق Windows وتعيد استخدام موارده الأصلية.
 
+تُولّد قائمة البرامج ورقم الإصدار في `catalog-data.js` من `scripts/local-apps.json` و`Directory.Build.props`. لا تعدّل الملف المولّد يدويًا؛ استخدم:
+
+```powershell
+.\scripts\Sync-WebCatalog.ps1
+```
+
 ## التشغيل
 
 يمكن فتح `index.html` مباشرة، أو تشغيل خادم محلي من جذر المشروع:

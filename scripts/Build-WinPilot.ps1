@@ -11,6 +11,8 @@ $project = Join-Path $root 'WinPilot-USB.csproj'
 $updaterProject = Join-Path $root 'WinPilot-Updater.csproj'
 if (-not (Test-Path $project)) { throw "Project file not found: $project" }
 
+& (Join-Path $PSScriptRoot 'Sync-WebCatalog.ps1')
+
 if ($Clean) { dotnet clean $project -c $Configuration; if ($LASTEXITCODE -ne 0) { throw 'dotnet clean failed' } }
 dotnet build $project -c $Configuration --nologo
 if ($LASTEXITCODE -ne 0) { throw 'dotnet build failed' }

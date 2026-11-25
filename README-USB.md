@@ -11,10 +11,16 @@
 
 ## البناء والتوقيع
 
-ملفا `WinPilot-USB.csproj` و`WinPilot-Updater.csproj` وأداة `scripts\Build-WinPilot.ps1` يعيدون بناء التطبيق والمحدث بإصدار `1.1.0.0` وبنية x86:
+يُقرأ رقم الإصدار المركزي من `Directory.Build.props`، وتستخدمه نسخة Windows والمحدث وكتالوج الويب. أداة `scripts\Build-WinPilot.ps1` تزامن بيانات الويب تلقائيًا ثم تعيد بناء التطبيق والمحدث ببنية x86:
 
 ```powershell
 .\scripts\Build-WinPilot.ps1 -Clean
+```
+
+لمزامنة قائمة الويب والإصدار دون بناء الملفات التنفيذية:
+
+```powershell
+.\scripts\Sync-WebCatalog.ps1
 ```
 
 لتوقيع الملف بشهادة Code Signing حقيقية مثبتة مع مفتاح خاص:
