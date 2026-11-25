@@ -9,6 +9,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
+using Microsoft.Win32;
+using System.Security.Principal;
 
 internal sealed class AppRow
 {
@@ -19,7 +21,18 @@ internal sealed class AppRow
     public string File;
     public string Version;
     public string Category;
-    public override string ToString() { return Name + "  |  " + Version; }
+    public string InstalledVersion;
+    public string State;
+    public bool IsCompatible = true;
+    public string CompatibilityReason;
+    public override string ToString() { return Name + "  |  " + Version + "  •  " + State; }
+}
+
+internal sealed class InstalledApp
+{
+    public string Name;
+    public string Version;
+    public bool Is64Bit;
 }
 
 internal sealed class MainForm : Form
@@ -59,7 +72,9 @@ internal sealed class MainForm : Form
     private string pendingSelectionArgument;
     private static readonly string[] Categories = { "مكتبية", "الوسائط", "الحماية", "المتصفحات", "التواصل", "أدوات النظام", "مكونات التشغيل", "أخرى" };
 
-    public MainForm(string baseDirectory = null, string selectionArgument = null)
+    public MainForm() : this(null, null) { }
+    public MainForm(string baseDirectory) : this(baseDirectory, null) { }
+    public MainForm(string baseDirectory, string selectionArgument)
     {
         if (baseDirectory != null) root = baseDirectory;
         pendingSelectionArgument = selectionArgument;
@@ -151,6 +166,13 @@ internal sealed class MainForm : Form
         appList.ItemCheck += (s, e) => {
             if (refreshing) return;
             var row = (AppRow)appList.Items[e.Index];
+            if (e.NewValue == CheckState.Checked && !row.IsCompatible) {
+                e.NewValue = CheckState.Unchecked;
+                BeginInvoke((Action)(() => MessageBox.Show(
+                    "لا يمكن تحديد هذا البرنامج لأنه غير متوافق مع الجهاز.\r\n\r\n" + row.CompatibilityReason,
+                    "Compatibility", MessageBoxButtons.OK, MessageBoxIcon.Warning)));
+                return;
+            }
             if (e.NewValue == CheckState.Checked) checkedIds.Add(row.Id); else checkedIds.Remove(row.Id);
             BeginInvoke((Action)UpdateSelectionState);
         };
@@ -390,6 +412,105 @@ internal sealed class MainForm : Form
         try { Process.Start(new ProcessStartInfo { FileName = file, WorkingDirectory = Path.GetDirectoryName(file), UseShellExecute = true, Verb = "runas" }); output.AppendText("\r\nStarted normal installer: " + Path.GetFileName(file) + "\r\n"); } catch (Exception ex) { MessageBox.Show(ex.Message, "Installer", MessageBoxButtons.OK, MessageBoxIcon.Error); }
     }
 
+    private static string NormalizeAppName(string value)
+    {
+        return Regex.Replace((value ?? "").ToLowerInvariant(), @"[^a-z0-9]+", "");
+    }
+    private static string[] InstalledAliases(string id, string name)
+    {
+        switch (id) {
+            case "vcredist-x64": case "vcredist-x86": return new[] { "Microsoft Visual C++ 2015-2022 Redistributable", "Microsoft Visual C++ 2015 Redistributable" };
+            case "dotnet-desktop-x64": case "dotnet-desktop-x86": return new[] { "Microsoft Windows Desktop Runtime", "Windows Desktop Runtime" };
+            case "chrome": return new[] { "Google Chrome" };
+            case "brave": return new[] { "Brave" };
+            default: return new[] { name };
+        }
+    }
+    private static List<InstalledApp> ScanInstalledApps()
+    {
+        var result = new List<InstalledApp>();
+        var hives = new[] { RegistryHive.LocalMachine, RegistryHive.CurrentUser };
+        var views = Environment.Is64BitOperatingSystem ? new[] { RegistryView.Registry64, RegistryView.Registry32 } : new[] { RegistryView.Registry32 };
+        foreach (var hive in hives) foreach (var view in views) {
+            try {
+                using (var baseKey = RegistryKey.OpenBaseKey(hive, view))
+                using (var uninstall = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall")) {
+                    if (uninstall == null) continue;
+                    foreach (var keyName in uninstall.GetSubKeyNames()) try {
+                        using (var key = uninstall.OpenSubKey(keyName)) {
+                            var displayName = Convert.ToString(key.GetValue("DisplayName"));
+                            if (!string.IsNullOrWhiteSpace(displayName)) result.Add(new InstalledApp {
+                                Name = displayName.Trim(), Version = Convert.ToString(key.GetValue("DisplayVersion")).Trim(), Is64Bit = view == RegistryView.Registry64
+                            });
+                        }
+                    } catch (System.Security.SecurityException) { } catch (UnauthorizedAccessException) { } catch (IOException) { }
+                }
+            } catch (System.Security.SecurityException) { } catch (UnauthorizedAccessException) { } catch (IOException) { }
+        }
+        return result;
+    }
+    private static InstalledApp FindInstalledApp(AppRow row, List<InstalledApp> installed)
+    {
+        bool needs64 = row.Id.EndsWith("-x64", StringComparison.OrdinalIgnoreCase);
+        bool needs32 = row.Id.EndsWith("-x86", StringComparison.OrdinalIgnoreCase);
+        foreach (var candidate in installed) {
+            if (needs64 && !candidate.Is64Bit) continue;
+            if (needs32 && candidate.Is64Bit) continue;
+            var candidateName = NormalizeAppName(candidate.Name);
+            foreach (var alias in InstalledAliases(row.Id, row.Name)) {
+                var normalizedAlias = NormalizeAppName(alias);
+                if (candidateName.Contains(normalizedAlias) || normalizedAlias.Contains(candidateName)) return candidate;
+            }
+        }
+        return null;
+    }
+    private static Version ParseDetectedVersion(string value)
+    {
+        var match = Regex.Match(value ?? "", @"\d+(?:\.\d+){1,3}");
+        if (!match.Success) return null;
+        Version parsed;
+        return Version.TryParse(match.Value, out parsed) ? parsed : null;
+    }
+    private static int GetWindowsMajorVersion()
+    {
+        try {
+            using (var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion")) {
+                var major = key == null ? null : key.GetValue("CurrentMajorVersionNumber");
+                if (major != null) return Convert.ToInt32(major);
+                var product = Convert.ToString(key == null ? null : key.GetValue("ProductName"));
+                if (product.Contains("Windows 11")) return 11;
+                if (product.Contains("Windows 10")) return 10;
+            }
+        } catch { }
+        return Environment.OSVersion.Version.Major;
+    }
+    private long GetAvailableDiskBytes()
+    {
+        try { return new DriveInfo(Path.GetPathRoot(root)).AvailableFreeSpace; }
+        catch { return long.MaxValue; }
+    }
+    private static bool IsAdministrator()
+    {
+        try { using (var identity = WindowsIdentity.GetCurrent()) { return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator); } }
+        catch { return false; }
+    }
+    private static void EvaluateCompatibility(AppRow row, List<InstalledApp> installed, int windowsMajor, long freeBytes)
+    {
+        var reasons = new List<string>();
+        if (windowsMajor < 10) reasons.Add("يتطلب Windows 10 أو Windows 11.");
+        if (row.Id.EndsWith("-x64", StringComparison.OrdinalIgnoreCase) && !Environment.Is64BitOperatingSystem) reasons.Add("يتطلب Windows x64.");
+        try { long required = new FileInfo(row.File).Length * 2 + (200L * 1024 * 1024); if (freeBytes < required) reasons.Add("المساحة المتاحة غير كافية للتثبيت."); } catch { }
+        row.IsCompatible = reasons.Count == 0;
+        row.CompatibilityReason = string.Join(" ", reasons);
+        if (!row.IsCompatible) { row.State = "غير متوافق"; return; }
+        var match = FindInstalledApp(row, installed);
+        if (match == null) { row.State = "غير مثبت"; return; }
+        row.InstalledVersion = string.IsNullOrWhiteSpace(match.Version) ? "Unknown" : match.Version;
+        var installerVersion = ParseDetectedVersion(row.Version);
+        var installedVersion = ParseDetectedVersion(match.Version);
+        row.State = installerVersion != null && installedVersion != null && installerVersion > installedVersion ? "تحديث متاح " + row.InstalledVersion : "مثبت " + row.InstalledVersion;
+    }
+
     private static bool FileNameMatches(string file, string pattern)
     {
         var expression = "^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$";
@@ -403,6 +524,9 @@ internal sealed class MainForm : Form
         var data = new JavaScriptSerializer().DeserializeObject(File.ReadAllText(ManifestPath())) as object[];
         var files = Directory.GetFiles(AppsPath(), "*", SearchOption.AllDirectories);
         var found = new List<AppRow>();
+        var installed = ScanInstalledApps();
+        long freeBytes = GetAvailableDiskBytes();
+        int windowsMajor = GetWindowsMajorVersion();
         if (data != null) foreach (var raw in data) {
             var item = raw as Dictionary<string, object>;
             if (item == null) continue;
@@ -411,6 +535,7 @@ internal sealed class MainForm : Form
             if (row.File != null) {
                 row.Version = DetectVersion(row.File);
                 row.Category = CategoryFor(row.Id);
+                EvaluateCompatibility(row, installed, windowsMajor, freeBytes);
                 found.Add(row);
             }
         }
@@ -421,8 +546,12 @@ internal sealed class MainForm : Form
     private void BindApps(List<AppRow> found)
     {
         allApps.Clear(); allApps.AddRange(found); appList.Items.Clear();
-        ApplyFilter(); progress.Value = 0; status.Text = ""; currentLabel.Text = "";
-        output.Text = "تم فحص مجلد Apps. اختر البرامج التي تريد تثبيتها.\r\nApps folder scanned. Select the applications to install.\r\n";
+        ApplyFilter(); progress.Value = 0; currentLabel.Text = "";
+        int installed = found.FindAll(row => row.State.StartsWith("مثبت")).Count;
+        int updates = found.FindAll(row => row.State.StartsWith("تحديث")).Count;
+        int incompatible = found.FindAll(row => !row.IsCompatible).Count;
+        status.Text = "Windows " + GetWindowsMajorVersion() + "  •  " + (Environment.Is64BitOperatingSystem ? "x64" : "x86") + "  •  Admin: " + (IsAdministrator() ? "Yes" : "No");
+        output.Text = "تم فحص مجلد Apps والجهاز.\r\nApps and device scanned.\r\nInstalled: " + installed + "  |  Updates: " + updates + "  |  Incompatible: " + incompatible + "\r\n";
     }
 
     private void ShowScanError(Exception ex)
