@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07111f"><meta name="description" content="نسخة الويب من Weeshi USB Installer">
+  <title>Weeshi USB Installer — Web</title><link rel="icon" href="../logo.png"><link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<a class="skip" href="#apps">انتقل إلى قائمة البرامج</a>
+<header class="app-header">
+  <div class="ad-frame"><img src="../Ads/dsa1.xxx" alt="إعلان WeeshiTech" width="660" height="140"></div>
+  <section class="identity">
+    <div class="system-strip"><span>USB &nbsp;•&nbsp; Local Apps</span><span class="online"><i></i> Web Companion</span><span>V1.1</span><b>Weeshi USB Installer</b></div>
+    <div class="brand-copy"><img src="../logo.png" alt="" width="86" height="86"><div><h1>Weeshi USB Installer</h1><p>اختر البرامج وجهّز حزمة التثبيت من واجهة واحدة<br><span>نسخة ويب مطابقة لتطبيق Windows</span></p></div></div>
+  </section>
+</header>
+
+<main>
+  <section class="apps-panel" id="apps" aria-labelledby="appsTitle">
+    <div class="selection-bar">
+      <label class="check-all"><input id="selectAll" type="checkbox"><span>تحديد الكل</span><small>Select all</small></label>
+      <button class="secondary" id="clearSelection" type="button">إلغاء التحديد</button>
+      <span class="selection-count" id="selectionCount" aria-live="polite">0 محدد</span>
+    </div>
+    <button class="install-button" id="installButton" type="button"><span>⚡</span> تثبيت صامت <small>Install silently</small></button>
+    <div class="section-title"><div><span>البرامج المتاحة</span><b id="appsTitle">Available applications</b></div><em id="resultCount"></em></div>
+    <label class="search-field"><span class="sr-only">بحث في البرامج</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg><input id="searchInput" type="search" placeholder="بحث في البرامج المتاحة..." autocomplete="off"><button id="clearSearch" type="button" aria-label="مسح البحث">×</button></label>
+    <div class="app-list" id="appList" role="group" aria-label="قائمة البرامج"></div>
+    <div class="empty-state" id="emptyState" hidden><b>لا توجد نتائج</b><span>جرّب اسمًا آخر أو امسح البحث.</span></div>
+  </section>
+
+  <section class="tools-panel" aria-label="أدوات إضافية">
+    <div class="tools-grid">
+      <button class="tool-card" data-tool="Office"><img src="../assets/office-card.png" alt=""><span><b>Office</b><small>Microsoft Office · 2019–2021</small></span></button>
+      <button class="tool-card" data-tool="Drivers"><img src="../assets/drivers-card.png" alt=""><span><b>Drivers</b><small>SDI · تعريفات الأجهزة</small></span></button>
+      <button class="tool-card danger" data-tool="Windows Updates Stop"><img src="../assets/windows-updates-stop-card.png" alt=""><span><b>Windows Updates Stop</b><small>إيقاف تحديثات Windows</small></span></button>
+      <button class="tool-card success" data-tool="Windows Updates Start"><img src="../assets/windows-updates-start-card.png" alt=""><span><b>Windows Updates Start</b><small>تشغيل تحديثات Windows</small></span></button>
+      <button class="tool-card" data-tool="Windows + Office Activation"><img src="../assets/windows-office-activation-card.png" alt=""><span><b>Windows + Office Activation</b><small>تفعيل Windows وOffice</small></span></button>
+      <article class="contact-card"><div><span>بيانات التواصل</span><b>Contact</b></div><p>0915955991 &nbsp;·&nbsp; 0945955991</p><nav aria-label="روابط التواصل"><button type="button" data-contact="facebook" aria-label="Facebook"><img src="../assets/contact-facebook.png" alt=""></button><a href="https://wa.me/218915955991" target="_blank" aria-label="WhatsApp"><img src="../assets/contact-whatsapp.png" alt=""></a><a href="https://www.ly-tech.ly" target="_blank" aria-label="الموقع الإلكتروني"><img src="../assets/contact-website.png" alt=""></a><a href="mailto:weeshiaia@gmail.com" aria-label="البريد الإلكتروني"><img src="../assets/contact-email.png" alt=""></a></nav></article>
+    </div>
+  </section>
+</main>
+
+<footer class="statusbar"><div><i></i><span id="statusText">جاهز — اختر البرامج المطلوبة</span></div><a href="https://github.com/weeshi/WinPilot-USB/releases/latest" target="_blank">تنزيل نسخة Windows</a></footer>
+
+<div class="dialog-backdrop" id="dialogBackdrop" hidden>
+  <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle" aria-describedby="dialogDescription">
+    <button class="dialog-close" id="dialogClose" type="button" aria-label="إغلاق">×</button>
+    <span class="dialog-kicker">WEB COMPANION</span><h2 id="dialogTitle"></h2><p id="dialogDescription"></p>
+    <div class="dialog-selection" id="dialogSelection"></div>
+    <div class="dialog-actions"><button class="secondary" id="dialogCancel" type="button">العودة</button><a class="download" href="https://github.com/weeshi/WinPilot-USB/releases/latest" target="_blank">تنزيل تطبيق Windows</a></div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="./app.js"></script>
+</body></html>

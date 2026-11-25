@@ -1,0 +1,14 @@
+{
+  "profile": "product-admin",
+  "sourceRoots": ["web-app"],
+  "locale": "ar-LY",
+  "canonicalMap": "UX-CONTRACT.md",
+  "requiredCapabilities": ["Scrollbar", "Toast"],
+  "ownership": {
+    "Scrollbar": "authored",
+    "Toast": "authored"
+  },
+  "requiredCommands": [],
+  "commands": {},
+  "evidence": {}
+}
