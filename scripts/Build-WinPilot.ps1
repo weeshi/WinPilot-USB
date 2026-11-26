@@ -14,9 +14,9 @@ if (-not (Test-Path $project)) { throw "Project file not found: $project" }
 & (Join-Path $PSScriptRoot 'Sync-WebCatalog.ps1')
 
 if ($Clean) { dotnet clean $project -c $Configuration; if ($LASTEXITCODE -ne 0) { throw 'dotnet clean failed' } }
-dotnet build $project -c $Configuration --nologo
+dotnet build $project -c $Configuration --nologo --disable-build-servers
 if ($LASTEXITCODE -ne 0) { throw 'dotnet build failed' }
-dotnet build $updaterProject -c $Configuration --nologo
+dotnet build $updaterProject -c $Configuration --nologo --disable-build-servers
 if ($LASTEXITCODE -ne 0) { throw 'updater build failed' }
 
 $built = Join-Path $root "bin\$Configuration\net48\WinPilot-USB.exe"

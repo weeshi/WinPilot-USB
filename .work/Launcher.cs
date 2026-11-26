@@ -35,6 +35,17 @@ internal sealed class InstalledApp
     public bool Is64Bit;
 }
 
+internal sealed class InstallResult
+{
+    public string Id;
+    public string Name;
+    public string Result;
+    public string Message;
+    public int ExitCode;
+    public string StartedAt;
+    public string FinishedAt;
+}
+
 internal sealed class MainForm : Form
 {
     private readonly string root = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
@@ -49,6 +60,9 @@ internal sealed class MainForm : Form
     private ProgressBar progress;
     private RichTextBox output;
     private Button install;
+    private Button cancelInstallButton;
+    private Button resumeInstallButton;
+    private Button openLogsButton;
     private Button updateButton;
     private UpdateRelease availableUpdate;
     private bool checkingUpdate;
@@ -66,6 +80,12 @@ internal sealed class MainForm : Form
     private readonly System.Threading.CancellationTokenSource adCancellation = new System.Threading.CancellationTokenSource();
     private int progressValue;
     private bool installing;
+    private int totalInstallCount;
+    private int completedInstallCount;
+    private DateTime installStartedAt;
+    private DateTime currentInstallStartedAt;
+    private readonly List<InstallResult> installResults = new List<InstallResult>();
+    private string lastReportPath;
     private TextBox search;
     private bool refreshing;
     private readonly HashSet<string> checkedIds = new HashSet<string>();
@@ -205,6 +225,13 @@ internal sealed class MainForm : Form
 
         Controls.AddRange(new Control[] { clearTop, importSelection, install });
 
+        cancelInstallButton = MakeButton("إلغاء الجاري  |  Cancel", 38, 674, 142, (s, e) => { if (installing) CancelInstall(); });
+        resumeInstallButton = MakeButton("استكمال  |  Resume", 188, 674, 142, (s, e) => ResumePendingInstallation());
+        openLogsButton = MakeButton("فتح السجلات  |  Logs", 338, 674, 142, (s, e) => OpenLogsFolder());
+        cancelInstallButton.Enabled = false;
+        resumeInstallButton.Enabled = File.Exists(PendingInstallPath());
+        Controls.AddRange(new Control[] { cancelInstallButton, resumeInstallButton, openLogsButton });
+
         progress = new ProgressBar { Location = new Point(38, 715), Size = new Size(1214, 14), Minimum = 0, Maximum = 100, Style = ProgressBarStyle.Continuous, AccessibleName = "installProgress" };
         output = new RichTextBox { Location = new Point(38, 737), Size = new Size(1214, 35), ReadOnly = true, BackColor = Color.FromArgb(6, 11, 22), ForeColor = Color.FromArgb(198, 231, 230), Font = new Font("Consolas", 9F), BorderStyle = BorderStyle.FixedSingle, AccessibleName = "installLog", Text = "[READY]  حدد البرامج التي تريد تثبيتها ثم اضغط تثبيت صامت.\r\n" };
         var versionLabel = new Label { Text = "V" + UpdateClient.CurrentVersionText + "   →   WeeshiTech Solutions © 2025", AutoSize = true, Location = new Point(38, 782), ForeColor = Color.FromArgb(125, 145, 170), Font = new Font("Consolas", 8.5F), AccessibleName = "applicationVersion" };
@@ -270,6 +297,8 @@ internal sealed class MainForm : Form
     private string ScriptsPath() { return Path.Combine(root, "scripts", "Install-LocalApps.ps1"); }
     private string ManifestPath() { return Path.Combine(root, "scripts", "local-apps.json"); }
     private string AppsPath() { return Path.Combine(root, "Apps"); }
+    private string LogsPath() { return Path.Combine(root, "scripts", "logs"); }
+    private string PendingInstallPath() { return Path.Combine(LogsPath(), "pending-installation.json"); }
 
     private Image LoadImageUnlocked(string path)
     {
@@ -698,17 +727,213 @@ internal sealed class MainForm : Form
     }
     private List<AppRow> SelectedApps() { return allApps.FindAll(row => checkedIds.Contains(row.Id)); }
     private void RunDryRun() { var selected = SelectedApps(); if (selected.Count == 0) { MessageBox.Show("حدد برنامجاً واحداً على الأقل أولاً.\nPlease select at least one application.", "Weeshi", MessageBoxButtons.OK, MessageBoxIcon.Information); return; } output.Clear(); foreach (var app in selected) output.AppendText("[DRY-RUN] " + app.Name + "\r\n  File: " + Path.GetFileName(app.File) + "\r\n"); status.Text = "اكتملت المعاينة  —  Dry run complete"; }
-    private void StartInstall() { if (installing) return; var selected = SelectedApps(); if (selected.Count == 0) { MessageBox.Show("حدد برنامجاً واحداً على الأقل أولاً.", "Weeshi", MessageBoxButtons.OK, MessageBoxIcon.Information); return; } if (MessageBox.Show("سيتم تثبيت " + selected.Count + " برنامجاً بالتتابع. عند الفشل ستظهر نافذة متابعة أو إلغاء.\n\nContinue?", "تأكيد التثبيت", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return; installQueue.Clear(); foreach (var app in selected) installQueue.Enqueue(app); installing = true; install.Enabled = false; selectAll.Enabled = false; appList.Enabled = false; output.Clear(); output.AppendText("بدء التثبيت الصامت بالتتابع...\r\nSilent installation queue started...\r\n"); StartNextInstall(); }
-    private void StartNextInstall() { if (installQueue.Count == 0) { FinishInstall(); return; } currentApp = installQueue.Dequeue(); progressValue = 1; progress.Value = 1; currentLabel.Text = "Installing " + currentApp.Name + " (1%)"; status.Text = "جاري التثبيت  —  Installing"; output.AppendText("\r\n>>> Installing: " + currentApp.Name + "\r\n    File: " + Path.GetFileName(currentApp.File) + "\r\n"); var psi = new ProcessStartInfo { FileName = "powershell.exe", Arguments = "-NoProfile -ExecutionPolicy Bypass -File \"" + ScriptsPath() + "\" -SourcePath \"" + AppsPath() + "\" -Name \"" + currentApp.Id + "\"", WorkingDirectory = root, UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true, StandardOutputEncoding = Encoding.UTF8 }; try { currentProcess = new Process { StartInfo = psi, EnableRaisingEvents = true }; currentProcess.OutputDataReceived += ProcessOutput; currentProcess.ErrorDataReceived += ProcessError; currentProcess.Exited += ProcessExited; currentProcess.Start(); currentProcess.BeginOutputReadLine(); currentProcess.BeginErrorReadLine(); progressTimer.Start(); } catch (Exception ex) { HandleFailure("تعذر تشغيل PowerShell: " + ex.Message); } }
+    private void StartInstall()
+    {
+        if (installing) return;
+        var selected = SelectedApps();
+        if (selected.Count == 0) { MessageBox.Show("حدد برنامجاً واحداً على الأقل أولاً.", "Weeshi", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+        if (MessageBox.Show("سيتم تثبيت " + selected.Count + " برنامجاً بالتتابع. يمكنك الإلغاء أو إعادة المحاولة أو التخطي عند الفشل.\n\nContinue?", "تأكيد التثبيت", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+        installQueue.Clear();
+        foreach (var app in selected) installQueue.Enqueue(app);
+        installResults.Clear();
+        totalInstallCount = selected.Count;
+        completedInstallCount = 0;
+        installStartedAt = DateTime.Now;
+        installing = true;
+        install.Enabled = false;
+        selectAll.Enabled = false;
+        appList.Enabled = false;
+        cancelInstallButton.Enabled = true;
+        resumeInstallButton.Enabled = false;
+        output.Clear();
+        output.AppendText("بدء التثبيت الصامت بالتتابع...\r\nSilent installation queue started...\r\n");
+        StartNextInstall();
+    }
+    private void StartNextInstall()
+    {
+        if (!installing) return;
+        if (installQueue.Count == 0) { FinishInstall(); return; }
+        currentApp = installQueue.Dequeue();
+        StartCurrentInstall();
+    }
+    private void StartCurrentInstall()
+    {
+        progressValue = 1;
+        currentInstallStartedAt = DateTime.Now;
+        UpdateOverallProgress();
+        currentLabel.Text = "Installing " + currentApp.Name + " (1%)  [" + (completedInstallCount + 1) + "/" + totalInstallCount + "]";
+        status.Text = "جاري التثبيت  —  Installing";
+        output.AppendText("\r\n>>> Installing: " + currentApp.Name + "\r\n    File: " + Path.GetFileName(currentApp.File) + "\r\n");
+        var psi = new ProcessStartInfo { FileName = "powershell.exe", Arguments = "-NoProfile -ExecutionPolicy Bypass -File \"" + ScriptsPath() + "\" -SourcePath \"" + AppsPath() + "\" -Name \"" + currentApp.Id + "\"", WorkingDirectory = root, UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true, StandardOutputEncoding = Encoding.UTF8 };
+        try {
+            currentProcess = new Process { StartInfo = psi, EnableRaisingEvents = true };
+            currentProcess.OutputDataReceived += ProcessOutput;
+            currentProcess.ErrorDataReceived += ProcessError;
+            currentProcess.Exited += ProcessExited;
+            currentProcess.Start();
+            currentProcess.BeginOutputReadLine();
+            currentProcess.BeginErrorReadLine();
+            progressTimer.Start();
+        } catch (Exception ex) { HandleFailure("تعذر تشغيل PowerShell: " + ex.Message, -1); }
+    }
     private void ProcessOutput(object sender, DataReceivedEventArgs e) { if (!string.IsNullOrWhiteSpace(e.Data)) BeginInvoke((Action)(() => HandleLine(e.Data))); }
     private void ProcessError(object sender, DataReceivedEventArgs e) { if (!string.IsNullOrWhiteSpace(e.Data)) BeginInvoke((Action)(() => output.AppendText("ERROR: " + e.Data + "\r\n"))); }
     private void HandleLine(string line) { if (line.IndexOf("[WINPILOT] INSTALLED|", StringComparison.OrdinalIgnoreCase) >= 0) { output.AppendText("    installed\r\n"); return; } if (line.IndexOf("[WINPILOT] FAILED|", StringComparison.OrdinalIgnoreCase) >= 0) { output.AppendText("    failed: " + line + "\r\n"); return; } if (!line.StartsWith("[WINPILOT] INSTALLING|", StringComparison.OrdinalIgnoreCase)) output.AppendText(line + "\r\n"); }
-    private void ProcessExited(object sender, EventArgs e) { BeginInvoke((Action)(() => { progressTimer.Stop(); var code = currentProcess.ExitCode; if (code == 0) { progress.Value = 100; currentLabel.Text = "Installed " + currentApp.Name + " (100%)"; output.AppendText("    Installed successfully.\r\n"); StartNextInstall(); } else HandleFailure("Exit code " + code + ". Review scripts\\logs for details."); })); }
-    private void UpdateProgressEstimate() { if (!installing || currentProcess == null || currentProcess.HasExited) return; if (progressValue < 90) progressValue += 3; progress.Value = progressValue; currentLabel.Text = "Installing " + currentApp.Name + " (" + progressValue + "%)"; }
-    private void HandleFailure(string reason) { progressTimer.Stop(); progress.Value = Math.Min(progressValue, 99); currentLabel.Text = "Failed to install " + currentApp.Name; output.AppendText("    Failed to install: " + reason + "\r\n"); var answer = MessageBox.Show("فشل تثبيت البرنامج:\r\n" + currentApp.Name + "\r\n\r\nالسبب:\r\n" + reason + "\r\n\r\nهل تريد إكمال تثبيت البرنامج التالي؟", "Install failed", MessageBoxButtons.YesNo, MessageBoxIcon.Error); if (answer == DialogResult.Yes) StartNextInstall(); else CancelInstall(); }
-    private void CancelInstall() { if (currentProcess != null && !currentProcess.HasExited) try { currentProcess.Kill(); } catch { } output.AppendText("\r\nInstallation cancelled by user.\r\n"); status.Text = "تم الإلغاء  —  Cancelled"; installing = false; RestoreControls(); }
-    private void FinishInstall() { progressTimer.Stop(); currentLabel.Text = "Install All Complete"; status.Text = "اكتمل تثبيت كل البرامج المحددة  —  Install All Complete"; output.AppendText("\r\n=== Install All Complete ===\r\nLogs: scripts\\logs\r\n"); installing = false; RestoreControls(); MessageBox.Show("Install All Complete\n\nراجع السجل لمزيد من التفاصيل.", "Weeshi", MessageBoxButtons.OK, MessageBoxIcon.Information); }
-    private void RestoreControls() { install.Enabled = true; selectAll.Enabled = true; appList.Enabled = true; }
+    private void ProcessExited(object sender, EventArgs e)
+    {
+        var finished = sender as Process;
+        BeginInvoke((Action)(() => {
+            if (!installing || finished == null || finished != currentProcess) return;
+            progressTimer.Stop();
+            var code = finished.ExitCode;
+            if (code == 0) {
+                progressValue = 100;
+                AddInstallResult("Succeeded", "Installed successfully.", code);
+                completedInstallCount++;
+                UpdateOverallProgress();
+                currentLabel.Text = "Installed " + currentApp.Name + "  [" + completedInstallCount + "/" + totalInstallCount + "]";
+                output.AppendText("    Installed successfully.\r\n");
+                StartNextInstall();
+            } else HandleFailure("Exit code " + code + ". Review scripts\\logs for details.", code);
+        }));
+    }
+    private void UpdateProgressEstimate()
+    {
+        if (!installing || currentProcess == null || currentProcess.HasExited) return;
+        if (progressValue < 90) progressValue += 3;
+        UpdateOverallProgress();
+        currentLabel.Text = "Installing " + currentApp.Name + " (" + progressValue + "%)  [" + (completedInstallCount + 1) + "/" + totalInstallCount + "]";
+    }
+    private void UpdateOverallProgress()
+    {
+        if (totalInstallCount <= 0) { progress.Value = 0; return; }
+        int overall = Math.Min(100, Math.Max(0, ((completedInstallCount * 100) + progressValue) / totalInstallCount));
+        progress.Value = overall;
+    }
+    private void HandleFailure(string reason, int exitCode)
+    {
+        progressTimer.Stop();
+        output.AppendText("    Failed to install: " + reason + "\r\n");
+        currentLabel.Text = "Failed: " + currentApp.Name;
+        var answer = MessageBox.Show(
+            "فشل تثبيت البرنامج:\r\n" + currentApp.Name + "\r\n\r\nالسبب:\r\n" + reason +
+            "\r\n\r\nRetry = إعادة المحاولة\r\nIgnore = تخطي ومتابعة\r\nAbort = إلغاء وحفظ المتبقي",
+            "Install failed", MessageBoxButtons.AbortRetryIgnore, MessageBoxIcon.Error, MessageBoxDefaultButton.Button2);
+        if (answer == DialogResult.Retry) {
+            output.AppendText("    Retrying...\r\n");
+            StartCurrentInstall();
+            return;
+        }
+        if (answer == DialogResult.Ignore) {
+            AddInstallResult("Skipped", reason, exitCode);
+            completedInstallCount++;
+            StartNextInstall();
+            return;
+        }
+        CancelInstall();
+    }
+    private void AddInstallResult(string result, string message, int exitCode)
+    {
+        installResults.Add(new InstallResult {
+            Id = currentApp == null ? "" : currentApp.Id,
+            Name = currentApp == null ? "" : currentApp.Name,
+            Result = result,
+            Message = message,
+            ExitCode = exitCode,
+            StartedAt = currentInstallStartedAt.ToString("o"),
+            FinishedAt = DateTime.Now.ToString("o")
+        });
+    }
+    private void KillCurrentProcessTree()
+    {
+        if (currentProcess == null || currentProcess.HasExited) return;
+        try {
+            using (var killer = Process.Start(new ProcessStartInfo {
+                FileName = "taskkill.exe", Arguments = "/PID " + currentProcess.Id + " /T /F",
+                UseShellExecute = false, CreateNoWindow = true
+            })) { if (killer != null) killer.WaitForExit(5000); }
+        } catch { try { currentProcess.Kill(); } catch { } }
+    }
+    private void CancelInstall()
+    {
+        if (!installing) return;
+        SavePendingInstallation(true);
+        AddInstallResult("Cancelled", "Cancelled by user.", -1);
+        installing = false;
+        progressTimer.Stop();
+        KillCurrentProcessTree();
+        output.AppendText("\r\nInstallation cancelled. Remaining queue saved.\r\n");
+        status.Text = "تم الإلغاء وحفظ المتبقي  —  Cancelled";
+        WriteInstallationReports("Cancelled");
+        RestoreControls();
+    }
+    private void FinishInstall()
+    {
+        progressTimer.Stop();
+        progressValue = 0;
+        progress.Value = 100;
+        currentLabel.Text = "Install All Complete";
+        status.Text = "اكتمل تثبيت كل البرامج المحددة  —  Install All Complete";
+        output.AppendText("\r\n=== Install All Complete ===\r\nLogs: scripts\\logs\r\n");
+        installing = false;
+        if (File.Exists(PendingInstallPath())) try { File.Delete(PendingInstallPath()); } catch { }
+        WriteInstallationReports("Completed");
+        RestoreControls();
+        MessageBox.Show("Install All Complete\n\nReport: " + lastReportPath, "Weeshi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+    private void SavePendingInstallation(bool includeCurrent)
+    {
+        Directory.CreateDirectory(LogsPath());
+        var ids = new List<string>();
+        if (includeCurrent && currentApp != null) ids.Add(currentApp.Id);
+        foreach (var app in installQueue) ids.Add(app.Id);
+        var payload = new Dictionary<string, object> {
+            { "schemaVersion", 1 }, { "productVersion", UpdateClient.CurrentVersionText },
+            { "createdAt", DateTime.UtcNow.ToString("o") }, { "apps", ids.ToArray() }
+        };
+        File.WriteAllText(PendingInstallPath(), new JavaScriptSerializer().Serialize(payload), new UTF8Encoding(false));
+    }
+    private void ResumePendingInstallation()
+    {
+        if (!File.Exists(PendingInstallPath())) { MessageBox.Show("لا توجد قائمة تثبيت محفوظة.", "Resume", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+        ImportSelection(PendingInstallPath(), false);
+        if (checkedIds.Count > 0) StartInstall();
+    }
+    private void OpenLogsFolder()
+    {
+        Directory.CreateDirectory(LogsPath());
+        try { Process.Start(new ProcessStartInfo { FileName = LogsPath(), UseShellExecute = true }); }
+        catch (Exception ex) { MessageBox.Show(ex.Message, "Logs", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+    }
+    private static string HtmlEncode(string value) { return System.Net.WebUtility.HtmlEncode(value ?? ""); }
+    private void WriteInstallationReports(string state)
+    {
+        Directory.CreateDirectory(LogsPath());
+        var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+        var baseName = "installation-report-" + stamp;
+        var jsonPath = Path.Combine(LogsPath(), baseName + ".json");
+        var htmlPath = Path.Combine(LogsPath(), baseName + ".html");
+        var report = new Dictionary<string, object> {
+            { "schemaVersion", 1 }, { "productVersion", UpdateClient.CurrentVersionText }, { "state", state },
+            { "startedAt", installStartedAt.ToString("o") }, { "finishedAt", DateTime.Now.ToString("o") },
+            { "total", totalInstallCount }, { "results", installResults.ToArray() }
+        };
+        File.WriteAllText(jsonPath, new JavaScriptSerializer().Serialize(report), new UTF8Encoding(false));
+        var rows = new StringBuilder();
+        foreach (var item in installResults) rows.Append("<tr><td>").Append(HtmlEncode(item.Name)).Append("</td><td>").Append(HtmlEncode(item.Result)).Append("</td><td>").Append(item.ExitCode).Append("</td><td>").Append(HtmlEncode(item.Message)).Append("</td></tr>");
+        var html = "<!doctype html><html lang=\"ar\" dir=\"rtl\"><meta charset=\"utf-8\"><title>WinPilot Installation Report</title><style>body{font-family:Segoe UI;background:#07111f;color:#eef7ff;padding:30px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #30455e;padding:10px;text-align:right}th{color:#28d7e8}code{color:#45d69b}</style><h1>تقرير تثبيت WinPilot</h1><p>الحالة: <code>" + HtmlEncode(state) + "</code> · الإصدار: <code>" + HtmlEncode(UpdateClient.CurrentVersionText) + "</code></p><table><thead><tr><th>البرنامج</th><th>النتيجة</th><th>Exit Code</th><th>التفاصيل</th></tr></thead><tbody>" + rows + "</tbody></table></html>";
+        File.WriteAllText(htmlPath, html, new UTF8Encoding(false));
+        lastReportPath = htmlPath;
+        output.AppendText("Report: " + htmlPath + "\r\n");
+    }
+    private void RestoreControls()
+    {
+        install.Enabled = true;
+        selectAll.Enabled = true;
+        appList.Enabled = true;
+        cancelInstallButton.Enabled = false;
+        resumeInstallButton.Enabled = File.Exists(PendingInstallPath());
+    }
 }
 
 internal static class Program

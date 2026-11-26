@@ -1,6 +1,6 @@
 Weeshi USB Installer
-Version: 1.3.0.0
-Release date: 2026-11-25
+Version: 1.3.1.0
+Release date: 2026-11-26
 Executable: WinPilot-USB.exe
 Updater: WinPilot-Updater.exe
 Architecture: x86

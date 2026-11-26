@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <BaseIntermediateOutputPath>obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
-    <WinPilotProductVersion>1.3.0.0</WinPilotProductVersion>
+    <WinPilotProductVersion>1.3.1.0</WinPilotProductVersion>
     <WinPilotFileVersion>$(WinPilotProductVersion)</WinPilotFileVersion>
     <Version>$(WinPilotFileVersion)</Version>
     <FileVersion>$(WinPilotFileVersion)</FileVersion>
